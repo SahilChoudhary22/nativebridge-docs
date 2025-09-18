@@ -1,97 +1,216 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "NativeBridge"
+description: "Seamless communication between web and native mobile applications"
 ---
 
-## Setting up
+<Hero>
+  <div className="text-center">
+    <h1 className="text-5xl font-bold mb-4">
+      Bridge the Gap Between Web and Native
+    </h1>
+    <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
+      NativeBridge provides a unified interface for JavaScript applications to communicate with iOS and Android native code seamlessly.
+    </p>
+    <div className="flex gap-4 justify-center">
+      <Card href="/quickstart" horizontal>
+        <div className="flex items-center gap-2">
+          <Icon icon="rocket" />
+          Get Started
+        </div>
+      </Card>
+      <Card href="https://github.com/nativebridge" horizontal>
+        <div className="flex items-center gap-2">
+          <Icon icon="github" />
+          View on GitHub
+        </div>
+      </Card>
+    </div>
+  </div>
+</Hero>
 
-Get your documentation site up and running in minutes.
+## Why NativeBridge?
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Build hybrid applications with confidence using our battle-tested bridge solution.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
+<CardGroup cols={3}>
   <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
+    title="Universal API"
+    icon="globe"
   >
-    Edit your docs locally and preview them in real time.
+    Single JavaScript API that works consistently across iOS, Android, and Web platforms
   </Card>
   <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
+    title="Type-Safe"
+    icon="shield-check"
   >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+    Full TypeScript support with auto-generated types from your native modules
   </Card>
   <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
+    title="Performance First"
+    icon="bolt"
   >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
-
-## Create beautiful pages
-
-Everything you need to create world-class documentation.
-
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+    Optimized message passing with minimal overhead and automatic batching
   </Card>
   <Card
-    title="Code samples"
+    title="Developer Experience"
     icon="code"
-    href="/essentials/code"
   >
-    Add sample code to demonstrate how to use your product.
+    Intuitive API design with comprehensive debugging tools and error handling
   </Card>
   <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
+    title="Battle-Tested"
+    icon="badge-check"
   >
-    Display images and other media.
+    Used in production by thousands of apps serving millions of users
   </Card>
   <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
+    title="Extensible"
+    icon="puzzle-piece"
   >
-    Write once and reuse across your docs.
+    Easy to add custom native modules and extend functionality
   </Card>
+</CardGroup>
+
+## Quick Example
+
+See how easy it is to communicate between JavaScript and native code:
+
+<CodeGroup>
+
+```javascript JavaScript
+// Call native method from JavaScript
+const result = await NativeBridge.execute('getUserLocation');
+console.log('User location:', result);
+
+// Register a handler for native events
+NativeBridge.on('locationUpdate', (data) => {
+  console.log('New location:', data);
+});
+
+// Call native method with parameters
+const photo = await NativeBridge.execute('takePhoto', {
+  quality: 'high',
+  camera: 'front'
+});
+```
+
+```swift iOS (Swift)
+// Register native method
+NativeBridge.register("getUserLocation") { params, callback in
+    let location = LocationManager.shared.currentLocation
+    callback(.success([
+        "latitude": location.latitude,
+        "longitude": location.longitude
+    ]))
+}
+
+// Emit event to JavaScript
+NativeBridge.emit("locationUpdate", data: [
+    "latitude": newLocation.latitude,
+    "longitude": newLocation.longitude
+])
+```
+
+```kotlin Android (Kotlin)
+// Register native method
+NativeBridge.register("getUserLocation") { params, callback ->
+    val location = LocationManager.getCurrentLocation()
+    callback.success(mapOf(
+        "latitude" to location.latitude,
+        "longitude" to location.longitude
+    ))
+}
+
+// Emit event to JavaScript
+NativeBridge.emit("locationUpdate", mapOf(
+    "latitude" to newLocation.latitude,
+    "longitude" to newLocation.longitude
+))
+```
+
+</CodeGroup>
+
+## Core Features
+
+<Columns cols={2}>
+  <div>
+    ### 🔄 Bidirectional Communication
+
+    Call native methods from JavaScript and vice versa with promise-based APIs and event emitters.
+
+    ### 📦 Module System
+
+    Organize native functionality into modules with namespaced methods for better code organization.
+
+    ### 🔍 Deep Debugging
+
+    Built-in debugging tools to inspect bridge traffic, performance metrics, and error tracking.
+  </div>
+
+  <div>
+    ### ⚡ Automatic Serialization
+
+    Seamlessly pass complex data structures between JavaScript and native code without manual conversion.
+
+    ### 🛡️ Error Boundaries
+
+    Robust error handling ensures one module's failure doesn't crash your entire application.
+
+    ### 📱 Platform Detection
+
+    Automatically detect platform capabilities and provide fallbacks for unsupported features.
+  </div>
 </Columns>
 
-## Need inspiration?
+## Getting Started
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
+Ready to integrate NativeBridge into your application?
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation Guide"
+    icon="download"
+    href="/installation"
+  >
+    Step-by-step guide to add NativeBridge to your project
+  </Card>
+  <Card
+    title="Quick Start Tutorial"
+    icon="rocket"
+    href="/quickstart"
+  >
+    Build your first bridge communication in 5 minutes
+  </Card>
+  <Card
+    title="API Documentation"
+    icon="book"
+    href="/api/javascript-api"
+  >
+    Complete API reference for all platforms
+  </Card>
+  <Card
+    title="Examples"
+    icon="code"
+    href="/examples/hello-world"
+  >
+    Learn from real-world implementation examples
+  </Card>
+</CardGroup>
+
+## Join the Community
+
+<Card href="https://discord.gg/nativebridge">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-lg font-semibold mb-2">Discord Community</h3>
+      <p className="text-gray-600 dark:text-gray-400">
+        Get help, share your projects, and connect with other developers using NativeBridge.
+      </p>
+    </div>
+    <Icon icon="discord" size={32} />
+  </div>
 </Card>
+
+<Note>
+  **Need enterprise support?** Contact us at [enterprise@nativebridge.dev](mailto:enterprise@nativebridge.dev) for dedicated support, custom modules, and training.
+</Note>

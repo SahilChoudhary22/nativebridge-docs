@@ -1,0 +1,1096 @@
+---
+title: "Android API"
+description: "Complete reference for NativeBridge Android SDK in Kotlin/Java"
+---
+
+## Installation
+
+### Gradle (Module-level)
+
+```gradle build.gradle
+dependencies {
+    implementation 'com.nativebridge:android:1.0.0'
+}
+```
+
+### Maven
+
+```xml pom.xml
+<dependency>
+    <groupId>com.nativebridge</groupId>
+    <artifactId>android</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+### Manual Installation
+
+1. Download the latest AAR from GitHub releases
+2. Add to your `app/libs` directory
+3. Add to your `build.gradle`:
+
+```gradle
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+}
+```
+
+## Core Classes
+
+### NativeBridge
+
+The main bridge class that manages communication between Android and JavaScript.
+
+```kotlin
+import com.nativebridge.NativeBridge
+
+// Access the singleton instance
+val bridge = NativeBridge.getInstance()
+```
+
+#### Initialization
+
+```kotlin
+class MyApplication : Application() {
+    
+    override fun onCreate() {
+        super.onCreate()
+        initializeNativeBridge()
+    }
+    
+    private fun initializeNativeBridge() {
+        val config = NativeBridgeConfig.Builder()
+            .setDebugMode(BuildConfig.DEBUG)
+            .setLogLevel(LogLevel.VERBOSE)
+            .setMessageTimeout(10000)
+            .setRetryAttempts(3)
+            .setRetryDelay(1000)
+            .enableBatching(true)
+            .setMaxBatchSize(10)
+            .setBatchTimeout(50)
+            .build()
+        
+        NativeBridge.initialize(this, config)
+    }
+}
+```
+
+#### Configuration Options
+
+```kotlin
+class NativeBridgeConfig private constructor(builder: Builder) {
+    val debugMode: Boolean = builder.debugMode
+    val logLevel: LogLevel = builder.logLevel
+    val messageTimeout: Long = builder.messageTimeout
+    val retryAttempts: Int = builder.retryAttempts
+    val retryDelay: Long = builder.retryDelay
+    val enableBatching: Boolean = builder.enableBatching
+    val maxBatchSize: Int = builder.maxBatchSize
+    val batchTimeout: Long = builder.batchTimeout
+    val allowedOrigins: List<String> = builder.allowedOrigins
+    val enableEncryption: Boolean = builder.enableEncryption
+    
+    class Builder {
+        var debugMode: Boolean = false
+        var logLevel: LogLevel = LogLevel.WARNING
+        var messageTimeout: Long = 5000L
+        var retryAttempts: Int = 3
+        var retryDelay: Long = 1000L
+        var enableBatching: Boolean = true
+        var maxBatchSize: Int = 10
+        var batchTimeout: Long = 50L
+        var allowedOrigins: MutableList<String> = mutableListOf()
+        var enableEncryption: Boolean = false
+        
+        fun setDebugMode(debug: Boolean) = apply { debugMode = debug }
+        fun setLogLevel(level: LogLevel) = apply { logLevel = level }
+        fun setMessageTimeout(timeout: Long) = apply { messageTimeout = timeout }
+        fun setRetryAttempts(attempts: Int) = apply { retryAttempts = attempts }
+        fun setRetryDelay(delay: Long) = apply { retryDelay = delay }
+        fun enableBatching(enable: Boolean) = apply { enableBatching = enable }
+        fun setMaxBatchSize(size: Int) = apply { maxBatchSize = size }
+        fun setBatchTimeout(timeout: Long) = apply { batchTimeout = timeout }
+        fun addAllowedOrigin(origin: String) = apply { allowedOrigins.add(origin) }
+        fun enableEncryption(enable: Boolean) = apply { enableEncryption = enable }
+        
+        fun build() = NativeBridgeConfig(this)
+    }
+}
+
+enum class LogLevel {
+    NONE, ERROR, WARNING, INFO, DEBUG, VERBOSE
+}
+```
+
+## Module Creation
+
+### BridgeModule
+
+Base class for creating native modules.
+
+```kotlin
+import android.content.Context
+import com.nativebridge.BridgeModule
+import com.nativebridge.BridgeMethod
+import com.nativebridge.BridgeCallback
+
+class DeviceModule(private val context: Context) : BridgeModule() {
+    
+    // MARK: - Module Configuration
+    
+    override fun getName(): String = "Device"
+    
+    override fun configure() {
+        // Module-specific configuration
+        timeout = 5000L
+        requiresMainThread = false
+        cacheable = true
+        priority = Priority.NORMAL
+    }
+    
+    override fun initialize() {
+        // Called when bridge is ready
+        Log.d("NativeBridge", "Device module initialized")
+    }
+    
+    override fun teardown() {
+        // Called during cleanup
+        Log.d("NativeBridge", "Device module torn down")
+    }
+    
+    // MARK: - Bridge Methods
+    
+    @BridgeMethod
+    fun getDeviceInfo(params: Map<String, Any>, callback: BridgeCallback) {
+        val info = mapOf(
+            "model" to Build.MODEL,
+            "manufacturer" to Build.MANUFACTURER,
+            "systemName" to "Android",
+            "systemVersion" to Build.VERSION.RELEASE,
+            "identifier" to getDeviceId(),
+            "brand" to Build.BRAND,
+            "device" to Build.DEVICE
+        )
+        
+        callback.success(info)
+    }
+    
+    @BridgeMethod
+    fun vibrate(params: Map<String, Any>, callback: BridgeCallback) {
+        val duration = (params["duration"] as? Number)?.toLong() ?: 500L
+        
+        val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val effect = VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
+            vibrator.vibrate(effect)
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(duration)
+        }
+        
+        callback.success(null)
+    }
+    
+    @BridgeMethod
+    fun getBatteryLevel(params: Map<String, Any>, callback: BridgeCallback) {
+        val intentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val batteryStatus = context.registerReceiver(null, intentFilter)
+        
+        val level = batteryStatus?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryStatus?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val status = batteryStatus?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        
+        val batteryPct = if (level != -1 && scale != -1) {
+            (level * 100 / scale.toFloat()).toInt()
+        } else {
+            -1
+        }
+        
+        val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                        status == BatteryManager.BATTERY_STATUS_FULL
+        
+        val info = mapOf(
+            "level" to batteryPct,
+            "isCharging" to isCharging
+        )
+        
+        callback.success(info)
+    }
+    
+    private fun getDeviceId(): String {
+        return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+    }
+}
+```
+
+### Method Annotation
+
+The `@BridgeMethod` annotation marks methods that can be called from JavaScript.
+
+```kotlin
+@BridgeMethod
+fun methodName(params: Map<String, Any>, callback: BridgeCallback) {
+    // Method implementation
+}
+```
+
+#### Method Signature Requirements
+
+- First parameter must be `Map<String, Any>` for the parameters
+- Second parameter must be `BridgeCallback` for the result callback
+- Method must be annotated with `@BridgeMethod`
+- Method must be public
+
+### Callback Interface
+
+```kotlin
+interface BridgeCallback {
+    fun success(data: Any?)
+    fun error(code: String, message: String, details: Map<String, Any>? = null)
+    fun error(error: BridgeError)
+}
+
+data class BridgeError(
+    val code: String,
+    val message: String,
+    val domain: String? = null,
+    val details: Map<String, Any>? = null
+) : Exception(message)
+```
+
+#### Callback Examples
+
+```kotlin
+@BridgeMethod
+fun exampleMethod(params: Map<String, Any>, callback: BridgeCallback) {
+    // Success with data
+    callback.success(mapOf(
+        "result" to "success",
+        "data" to someData
+    ))
+    
+    // Success with no data
+    callback.success(null)
+    
+    // Error with code and message
+    callback.error("INVALID_PARAMS", "Required parameter 'id' is missing")
+    
+    // Error with details
+    callback.error(BridgeError(
+        code = "NETWORK_ERROR",
+        message = "Failed to connect to server",
+        domain = "Network",
+        details = mapOf("statusCode" to 500)
+    ))
+}
+```
+
+## Advanced Module Features
+
+### Coroutine Support
+
+```kotlin
+@BridgeMethod
+fun asyncMethod(params: Map<String, Any>, callback: BridgeCallback) {
+    // Launch coroutine for async operations
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val result = performAsyncOperation()
+            
+            // Switch to main thread for callback
+            withContext(Dispatchers.Main) {
+                callback.success(result)
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                callback.error("ASYNC_ERROR", e.message ?: "Unknown error")
+            }
+        }
+    }
+}
+
+private suspend fun performAsyncOperation(): Map<String, Any> = withContext(Dispatchers.IO) {
+    // Simulate async work
+    delay(1000)
+    mapOf("completed" to true)
+}
+```
+
+### Background Thread Support
+
+```kotlin
+@BridgeMethod
+fun heavyComputation(params: Map<String, Any>, callback: BridgeCallback) {
+    Thread {
+        try {
+            // Perform heavy computation on background thread
+            val result = performHeavyTask()
+            
+            // Post result back to main thread
+            Handler(Looper.getMainLooper()).post {
+                callback.success(result)
+            }
+        } catch (e: Exception) {
+            Handler(Looper.getMainLooper()).post {
+                callback.error("COMPUTATION_ERROR", e.message ?: "Computation failed")
+            }
+        }
+    }.start()
+}
+```
+
+### Parameter Validation
+
+```kotlin
+@BridgeMethod
+fun validateParams(params: Map<String, Any>, callback: BridgeCallback) {
+    // Validate required parameters
+    val userId = params["userId"] as? String
+    if (userId.isNullOrEmpty()) {
+        callback.error("INVALID_PARAMS", "userId is required and must be a non-empty string")
+        return
+    }
+    
+    // Validate optional parameters with defaults
+    val includeDetails = params["includeDetails"] as? Boolean ?: false
+    val maxItems = (params["maxItems"] as? Number)?.toInt() ?: 10
+    
+    // Validate ranges
+    if (maxItems !in 1..100) {
+        callback.error("INVALID_PARAMS", "maxItems must be between 1 and 100")
+        return
+    }
+    
+    // Proceed with validated parameters
+    val result = processUser(userId, includeDetails, maxItems)
+    callback.success(result)
+}
+```
+
+## Event Emission
+
+### Emitting Events to JavaScript
+
+```kotlin
+class NotificationModule(private val context: Context) : BridgeModule() {
+    
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_BATTERY_CHANGED) {
+                handleBatteryChanged(intent)
+            }
+        }
+    }
+    
+    override fun getName(): String = "Notification"
+    
+    override fun initialize() {
+        // Register broadcast receiver
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        context.registerReceiver(batteryReceiver, filter)
+    }
+    
+    private fun handleBatteryChanged(intent: Intent) {
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        
+        val batteryPct = if (level != -1 && scale != -1) {
+            (level * 100 / scale.toFloat()).toInt()
+        } else -1
+        
+        val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                        status == BatteryManager.BATTERY_STATUS_FULL
+        
+        // Emit event to JavaScript
+        emit("batteryLevelChanged", mapOf(
+            "level" to batteryPct,
+            "isCharging" to isCharging,
+            "timestamp" to System.currentTimeMillis()
+        ))
+    }
+    
+    @BridgeMethod
+    fun startBatteryMonitoring(params: Map<String, Any>, callback: BridgeCallback) {
+        // Battery monitoring is automatically started in initialize()
+        callback.success(mapOf("monitoring" to true))
+    }
+    
+    override fun teardown() {
+        try {
+            context.unregisterReceiver(batteryReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Receiver was not registered
+        }
+    }
+}
+```
+
+### Global Event Emission
+
+```kotlin
+// Emit events from anywhere in your app
+NativeBridge.emit("app.backgrounded", mapOf(
+    "timestamp" to System.currentTimeMillis()
+))
+
+NativeBridge.emit("user.authenticated", mapOf(
+    "userId" to user.id,
+    "email" to user.email
+))
+```
+
+## Module Registration
+
+### Registration in Application Class
+
+```kotlin
+class MyApplication : Application() {
+    
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Initialize bridge
+        NativeBridge.initialize(this)
+        
+        // Register modules
+        registerModules()
+    }
+    
+    private fun registerModules() {
+        val bridge = NativeBridge.getInstance()
+        
+        // Register individual modules
+        bridge.registerModule(DeviceModule(this))
+        bridge.registerModule(StorageModule(this))
+        bridge.registerModule(CameraModule(this))
+        bridge.registerModule(NotificationModule(this))
+        
+        // Register modules in batch
+        bridge.registerModules(listOf(
+            AnalyticsModule(this),
+            AuthModule(this),
+            LocationModule(this)
+        ))
+    }
+}
+```
+
+### Conditional Registration
+
+```kotlin
+private fun registerModules() {
+    val bridge = NativeBridge.getInstance()
+    
+    // Always available modules
+    bridge.registerModule(DeviceModule(this))
+    bridge.registerModule(StorageModule(this))
+    
+    // API level-specific modules
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        bridge.registerModule(NotificationChannelsModule(this))
+    }
+    
+    // Feature-specific modules
+    if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
+        bridge.registerModule(CameraModule(this))
+    }
+    
+    // Debug-only modules
+    if (BuildConfig.DEBUG) {
+        bridge.registerModule(DebugModule(this))
+    }
+}
+```
+
+## WebView Integration
+
+### WebView Setup
+
+```kotlin
+import android.webkit.WebView
+import com.nativebridge.NativeBridge
+
+class WebActivity : AppCompatActivity() {
+    
+    private lateinit var webView: WebView
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_web)
+        
+        webView = findViewById(R.id.webview)
+        setupWebView()
+    }
+    
+    private fun setupWebView() {
+        // Configure WebView settings
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            allowFileAccess = false
+            allowContentAccess = false
+        }
+        
+        // Attach NativeBridge to WebView
+        NativeBridge.attach(webView)
+        
+        // Load your web content
+        webView.loadUrl("https://yourapp.com")
+    }
+}
+```
+
+### Custom WebView Configuration
+
+```kotlin
+class CustomWebActivity : AppCompatActivity() {
+    
+    private lateinit var webView: WebView
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        createWebView()
+    }
+    
+    private fun createWebView() {
+        webView = WebView(this)
+        
+        // Configure WebView
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = false
+            allowContentAccess = false
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
+        
+        // Set WebView client
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                // Page loaded, bridge is ready
+            }
+        }
+        
+        // Attach bridge with custom configuration
+        val bridgeConfig = WebViewBridgeConfig.Builder()
+            .setInterfaceName("customBridge")
+            .enableJavaScriptInterface(true)
+            .enableLogging(BuildConfig.DEBUG)
+            .build()
+        
+        NativeBridge.attach(webView, bridgeConfig)
+        
+        setContentView(webView)
+    }
+}
+```
+
+## Error Handling
+
+### Custom Error Types
+
+```kotlin
+enum class DeviceError(val code: String, val defaultMessage: String) {
+    PERMISSION_DENIED("PERMISSION_DENIED", "Required permission was denied"),
+    FEATURE_UNAVAILABLE("FEATURE_UNAVAILABLE", "Feature is not available on this device"),
+    INVALID_CONFIGURATION("INVALID_CONFIGURATION", "Invalid configuration provided"),
+    OPERATION_CANCELLED("OPERATION_CANCELLED", "Operation was cancelled by user");
+    
+    fun toBridgeError(message: String? = null): BridgeError {
+        return BridgeError(
+            code = this.code,
+            message = message ?: this.defaultMessage,
+            domain = "Device"
+        )
+    }
+}
+```
+
+### Error Handling in Methods
+
+```kotlin
+@BridgeMethod
+fun requestLocationPermission(params: Map<String, Any>, callback: BridgeCallback) {
+    when {
+        ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED -> {
+            callback.success(mapOf("status" to "granted"))
+        }
+        
+        ActivityCompat.shouldShowRequestPermissionRationale(
+            context as Activity,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) -> {
+            callback.error(
+                DeviceError.PERMISSION_DENIED.toBridgeError(
+                    "Location permission was previously denied"
+                )
+            )
+        }
+        
+        else -> {
+            // Request permission
+            ActivityCompat.requestPermissions(
+                context as Activity,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+            callback.success(mapOf("status" to "requested"))
+        }
+    }
+}
+```
+
+### Global Error Handling
+
+```kotlin
+class ErrorHandler : NativeBridgeErrorHandler {
+    
+    override fun handleBridgeError(error: BridgeError, context: BridgeContext) {
+        // Log error
+        Log.e("NativeBridge", "Bridge Error [${error.code}]: ${error.message}")
+        
+        // Send to analytics
+        Analytics.track("bridge_error", mapOf(
+            "code" to error.code,
+            "message" to error.message,
+            "module" to context.moduleName,
+            "method" to context.methodName
+        ))
+        
+        // Show user notification for critical errors
+        when (error.code) {
+            "PERMISSION_DENIED" -> showPermissionDialog()
+            "NETWORK_ERROR" -> showNetworkErrorToast()
+        }
+    }
+    
+    private fun showPermissionDialog() {
+        // Show permission dialog
+        val context = NativeBridge.getInstance().getContext()
+        if (context is Activity) {
+            AlertDialog.Builder(context)
+                .setTitle("Permission Required")
+                .setMessage("This feature requires additional permissions. Please enable them in Settings.")
+                .setPositiveButton("Settings") { _, _ ->
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.fromParts("package", context.packageName, null)
+                    context.startActivity(intent)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+    
+    private fun showNetworkErrorToast() {
+        val context = NativeBridge.getInstance().getContext()
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, "Network error. Please check your connection.", Toast.LENGTH_LONG).show()
+        }
+    }
+}
+
+// Register error handler
+NativeBridge.setErrorHandler(ErrorHandler())
+```
+
+## Debugging and Logging
+
+### Debug Configuration
+
+```kotlin
+val config = if (BuildConfig.DEBUG) {
+    NativeBridgeConfig.Builder()
+        .setDebugMode(true)
+        .setLogLevel(LogLevel.VERBOSE)
+        .enableMessageLogging(true)
+        .logMessagePayloads(true)
+        .build()
+} else {
+    NativeBridgeConfig.Builder()
+        .setDebugMode(false)
+        .setLogLevel(LogLevel.ERROR)
+        .build()
+}
+
+NativeBridge.initialize(this, config)
+```
+
+### Custom Logging
+
+```kotlin
+class CustomLogger : NativeBridgeLogger {
+    
+    override fun log(level: LogLevel, message: String, category: String, 
+                    file: String, function: String, line: Int) {
+        val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date())
+        val logMessage = "[$timestamp] [$level] [$category] $message"
+        
+        // Log to Android Log
+        when (level) {
+            LogLevel.ERROR -> Log.e(category, message)
+            LogLevel.WARNING -> Log.w(category, message)
+            LogLevel.INFO -> Log.i(category, message)
+            LogLevel.DEBUG -> Log.d(category, message)
+            LogLevel.VERBOSE -> Log.v(category, message)
+            LogLevel.NONE -> { /* No logging */ }
+        }
+        
+        // Log to file
+        writeToLogFile(logMessage)
+        
+        // Send to remote logging service
+        if (level == LogLevel.ERROR) {
+            sendToRemoteLogger(logMessage)
+        }
+    }
+    
+    private fun writeToLogFile(message: String) {
+        // Implementation for file logging
+    }
+    
+    private fun sendToRemoteLogger(message: String) {
+        // Implementation for remote logging
+    }
+}
+
+// Set custom logger
+NativeBridge.setLogger(CustomLogger())
+```
+
+## Performance Optimization
+
+### Method Caching
+
+```kotlin
+class CachedModule(context: Context) : BridgeModule() {
+    
+    private val cache = LruCache<String, Any>(100)
+    
+    override fun configure() {
+        cacheable = true
+        cacheTimeout = 60000L // 1 minute
+    }
+    
+    @BridgeMethod
+    fun getExpensiveData(params: Map<String, Any>, callback: BridgeCallback) {
+        val cacheKey = "expensive_data"
+        
+        // Check cache first
+        cache.get(cacheKey)?.let { cachedData ->
+            callback.success(cachedData)
+            return
+        }
+        
+        // Expensive operation
+        Thread {
+            val data = performExpensiveOperation()
+            
+            // Cache result
+            cache.put(cacheKey, data)
+            
+            Handler(Looper.getMainLooper()).post {
+                callback.success(data)
+            }
+        }.start()
+    }
+    
+    private fun performExpensiveOperation(): Map<String, Any> {
+        // Simulate expensive operation
+        Thread.sleep(2000)
+        return mapOf("result" to "expensive_data")
+    }
+}
+```
+
+### Memory Management
+
+```kotlin
+class MemoryAwareModule(private val context: Context) : BridgeModule() {
+    
+    private val cache = LruCache<String, Any>(50)
+    private val memoryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_DEVICE_STORAGE_LOW) {
+                handleMemoryWarning()
+            }
+        }
+    }
+    
+    override fun initialize() {
+        // Monitor memory warnings
+        val filter = IntentFilter(Intent.ACTION_DEVICE_STORAGE_LOW)
+        context.registerReceiver(memoryReceiver, filter)
+    }
+    
+    private fun handleMemoryWarning() {
+        // Clear caches
+        cache.evictAll()
+        
+        // Release unnecessary resources
+        releaseResources()
+        
+        // Emit memory warning event
+        emit("memoryWarning", mapOf("timestamp" to System.currentTimeMillis()))
+    }
+    
+    private fun releaseResources() {
+        // Release any heavyweight resources
+        System.gc()
+    }
+    
+    override fun teardown() {
+        try {
+            context.unregisterReceiver(memoryReceiver)
+        } catch (e: IllegalArgumentException) {
+            // Receiver was not registered
+        }
+    }
+}
+```
+
+## Testing
+
+### Unit Testing Modules
+
+```kotlin
+import org.junit.Before
+import org.junit.Test
+import org.junit.Assert.*
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.*
+import android.content.Context
+
+class DeviceModuleTest {
+    
+    @Mock
+    private lateinit var mockContext: Context
+    
+    @Mock
+    private lateinit var mockBridge: NativeBridge
+    
+    private lateinit var deviceModule: DeviceModule
+    
+    @Before
+    fun setUp() {
+        MockitoAnnotations.openMocks(this)
+        deviceModule = DeviceModule(mockContext)
+        deviceModule.setBridge(mockBridge)
+    }
+    
+    @Test
+    fun testGetDeviceInfo() {
+        val callback = mock<BridgeCallback>()
+        
+        deviceModule.getDeviceInfo(emptyMap(), callback)
+        
+        verify(callback).success(any())
+        verify(callback, never()).error(any(), any())
+    }
+    
+    @Test
+    fun testVibrate() {
+        val callback = mock<BridgeCallback>()
+        val params = mapOf("duration" to 300L)
+        
+        deviceModule.vibrate(params, callback)
+        
+        verify(callback).success(null)
+    }
+    
+    @Test
+    fun testVibrateWithInvalidDuration() {
+        val callback = mock<BridgeCallback>()
+        val params = mapOf("duration" to "invalid")
+        
+        deviceModule.vibrate(params, callback)
+        
+        // Should still succeed with default duration
+        verify(callback).success(null)
+    }
+}
+```
+
+### Mock Bridge for Testing
+
+```kotlin
+class MockNativeBridge : NativeBridge {
+    
+    private val emittedEvents = mutableListOf<Pair<String, Any?>>()
+    
+    override fun emit(event: String, data: Any?) {
+        emittedEvents.add(event to data)
+    }
+    
+    fun getEmittedEvents(): List<Pair<String, Any?>> {
+        return emittedEvents.toList()
+    }
+    
+    fun clearEmittedEvents() {
+        emittedEvents.clear()
+    }
+}
+```
+
+### Integration Testing
+
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class NativeBridgeIntegrationTest {
+    
+    @get:Rule
+    val activityRule = ActivityTestRule(TestActivity::class.java)
+    
+    private lateinit var bridge: NativeBridge
+    
+    @Before
+    fun setUp() {
+        bridge = NativeBridge.getInstance()
+        bridge.registerModule(DeviceModule(activityRule.activity))
+    }
+    
+    @Test
+    fun testModuleRegistration() {
+        assertTrue(bridge.hasModule("Device"))
+    }
+    
+    @Test
+    fun testMethodExecution() {
+        val latch = CountDownLatch(1)
+        var result: Any? = null
+        
+        bridge.executeMethod("Device.getDeviceInfo", emptyMap()) { success, data, error ->
+            result = data
+            latch.countDown()
+        }
+        
+        latch.await(5, TimeUnit.SECONDS)
+        assertNotNull(result)
+    }
+}
+```
+
+## Permissions and Security
+
+### Permission Handling
+
+```kotlin
+class PermissionModule(private val context: Context) : BridgeModule() {
+    
+    companion object {
+        private const val PERMISSION_REQUEST_CODE = 1001
+    }
+    
+    override fun getName(): String = "Permission"
+    
+    @BridgeMethod
+    fun requestPermissions(params: Map<String, Any>, callback: BridgeCallback) {
+        val permissions = params["permissions"] as? List<String>
+        if (permissions.isNullOrEmpty()) {
+            callback.error("INVALID_PARAMS", "permissions array is required")
+            return
+        }
+        
+        val activity = context as? Activity
+        if (activity == null) {
+            callback.error("CONTEXT_ERROR", "Activity context required for permission requests")
+            return
+        }
+        
+        val missingPermissions = permissions.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        
+        if (missingPermissions.isEmpty()) {
+            callback.success(mapOf("granted" to true))
+        } else {
+            ActivityCompat.requestPermissions(
+                activity,
+                missingPermissions.toTypedArray(),
+                PERMISSION_REQUEST_CODE
+            )
+            
+            // Store callback for later use
+            storePermissionCallback(PERMISSION_REQUEST_CODE, callback)
+        }
+    }
+    
+    fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            val callback = getStoredPermissionCallback(requestCode)
+            
+            val allGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            val results = permissions.mapIndexed { index, permission ->
+                permission to (grantResults.getOrNull(index) == PackageManager.PERMISSION_GRANTED)
+            }.toMap()
+            
+            callback?.success(mapOf(
+                "granted" to allGranted,
+                "results" to results
+            ))
+        }
+    }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion icon="shield" title="Security">
+    - Always validate input parameters
+    - Use proper permission checks before accessing sensitive APIs
+    - Sanitize data before native operations
+    - Enable ProGuard/R8 obfuscation for release builds
+    - Use HTTPS for all network communications
+  </Accordion>
+  
+  <Accordion icon="rocket" title="Performance">
+    - Use background threads for heavy operations
+    - Implement proper caching strategies
+    - Avoid blocking the main thread
+    - Use efficient data structures (LruCache, SparseArray)
+    - Minimize object allocations in hot paths
+  </Accordion>
+  
+  <Accordion icon="bug" title="Error Handling">
+    - Always provide meaningful error messages
+    - Use appropriate error codes
+    - Implement proper exception handling
+    - Log errors for debugging
+    - Provide fallback behaviors
+  </Accordion>
+  
+  <Accordion icon="memory" title="Memory Management">
+    - Clean up resources in teardown()
+    - Unregister broadcast receivers
+    - Close database connections
+    - Remove observers and listeners
+    - Use weak references for callbacks when appropriate
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Methods Reference"
+    icon="list"
+    href="/api/methods"
+  >
+    Complete reference of all bridge methods
+  </Card>
+  <Card
+    title="Android Integration Guide"
+    icon="book"
+    href="/guides/android-integration"
+  >
+    Step-by-step Android integration guide
+  </Card>
+</CardGroup>

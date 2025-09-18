@@ -1,0 +1,647 @@
+---
+title: "Data Serialization"
+description: "How NativeBridge handles data conversion between JavaScript and native platforms"
+---
+
+## Overview
+
+NativeBridge automatically handles the serialization and deserialization of data between JavaScript and native platforms. This seamless conversion allows you to pass complex data structures without manual transformation while maintaining type safety and performance.
+
+## Supported Data Types
+
+### Primitive Types
+
+Basic data types are directly supported across all platforms:
+
+<Tabs>
+  <Tab title="JavaScript">
+    ```javascript
+    // Primitive types
+    const string = "Hello World";
+    const number = 42;
+    const boolean = true;
+    const nullValue = null;
+    const undefinedValue = undefined;
+    
+    // Pass to native
+    await bridge.execute('Module.method', {
+      text: string,
+      count: number,
+      enabled: boolean,
+      empty: nullValue
+      // undefined values are omitted
+    });
+    ```
+  </Tab>
+  <Tab title="iOS (Swift)">
+    ```swift
+    // Received in native as Swift types
+    @BridgeMethod
+    func method(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let text = params["text"] as? String        // "Hello World"
+        let count = params["count"] as? Int         // 42
+        let enabled = params["enabled"] as? Bool    // true
+        let empty = params["empty"]                 // NSNull
+        
+        // Process data...
+        callback(.success(["processed": true]))
+    }
+    ```
+  </Tab>
+  <Tab title="Android (Kotlin)">
+    ```kotlin
+    // Received in native as Kotlin types
+    @BridgeMethod
+    fun method(params: Map<String, Any>, callback: BridgeCallback) {
+        val text = params["text"] as? String        // "Hello World"
+        val count = params["count"] as? Int         // 42
+        val enabled = params["enabled"] as? Boolean // true
+        val empty = params["empty"]                 // null
+        
+        // Process data...
+        callback.success(mapOf("processed" to true))
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Complex Types
+
+#### Arrays and Lists
+
+```javascript
+// JavaScript arrays
+const numbers = [1, 2, 3, 4, 5];
+const mixed = ["text", 42, true, { nested: "object" }];
+const nested = [[1, 2], [3, 4], [5, 6]];
+
+const result = await bridge.execute('Array.process', {
+  numbers,
+  mixed,
+  nested
+});
+```
+
+<Tabs>
+  <Tab title="iOS">
+    ```swift
+    @BridgeMethod
+    func process(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let numbers = params["numbers"] as? [Int]           // [1, 2, 3, 4, 5]
+        let mixed = params["mixed"] as? [Any]               // Mixed array
+        let nested = params["nested"] as? [[Int]]           // Nested arrays
+        
+        callback(.success(["length": numbers?.count ?? 0]))
+    }
+    ```
+  </Tab>
+  <Tab title="Android">
+    ```kotlin
+    @BridgeMethod
+    fun process(params: Map<String, Any>, callback: BridgeCallback) {
+        val numbers = params["numbers"] as? List<Int>       // [1, 2, 3, 4, 5]
+        val mixed = params["mixed"] as? List<Any>           // Mixed list
+        val nested = params["nested"] as? List<List<Int>>   // Nested lists
+        
+        callback.success(mapOf("length" to (numbers?.size ?: 0)))
+    }
+    ```
+  </Tab>
+</Tabs>
+
+#### Objects and Maps
+
+```javascript
+// JavaScript objects
+const user = {
+  id: 123,
+  name: "John Doe",
+  email: "john@example.com",
+  preferences: {
+    theme: "dark",
+    notifications: true
+  },
+  tags: ["admin", "premium"]
+};
+
+const result = await bridge.execute('User.create', { user });
+```
+
+<Tabs>
+  <Tab title="iOS">
+    ```swift
+    @BridgeMethod
+    func create(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        guard let userDict = params["user"] as? [String: Any] else {
+            callback(.error(BridgeError.invalidParams("User object required")))
+            return
+        }
+        
+        let id = userDict["id"] as? Int
+        let name = userDict["name"] as? String
+        let email = userDict["email"] as? String
+        let preferences = userDict["preferences"] as? [String: Any]
+        let tags = userDict["tags"] as? [String]
+        
+        // Create user model
+        let user = User(
+            id: id ?? 0,
+            name: name ?? "",
+            email: email ?? "",
+            preferences: UserPreferences(from: preferences),
+            tags: tags ?? []
+        )
+        
+        callback(.success(["userId": user.id]))
+    }
+    ```
+  </Tab>
+  <Tab title="Android">
+    ```kotlin
+    @BridgeMethod
+    fun create(params: Map<String, Any>, callback: BridgeCallback) {
+        val userMap = params["user"] as? Map<String, Any> ?: run {
+            callback.error("User object required")
+            return
+        }
+        
+        val id = userMap["id"] as? Int ?: 0
+        val name = userMap["name"] as? String ?: ""
+        val email = userMap["email"] as? String ?: ""
+        val preferences = userMap["preferences"] as? Map<String, Any>
+        val tags = userMap["tags"] as? List<String> ?: emptyList()
+        
+        // Create user model
+        val user = User(
+            id = id,
+            name = name,
+            email = email,
+            preferences = UserPreferences.from(preferences),
+            tags = tags
+        )
+        
+        callback.success(mapOf("userId" to user.id))
+    }
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Serialization
+
+### Custom Type Handlers
+
+Register custom serializers for complex types:
+
+```javascript
+// Register custom serializer
+bridge.registerSerializer('Date', {
+  serialize: (date) => date.toISOString(),
+  deserialize: (isoString) => new Date(isoString)
+});
+
+bridge.registerSerializer('BigInt', {
+  serialize: (bigint) => bigint.toString(),
+  deserialize: (string) => BigInt(string)
+});
+
+// Usage
+const now = new Date();
+const largeNumber = BigInt('9007199254740991');
+
+const result = await bridge.execute('DateTime.process', {
+  timestamp: now,
+  id: largeNumber
+});
+```
+
+### Binary Data Handling
+
+#### ArrayBuffer and Typed Arrays
+
+```javascript
+// Working with binary data
+const imageData = new Uint8Array([255, 0, 0, 255]); // RGBA pixel
+const audioBuffer = new Float32Array(1024);         // Audio samples
+const fileData = new ArrayBuffer(2048);             // File content
+
+// NativeBridge automatically converts to base64
+const result = await bridge.execute('Media.process', {
+  image: imageData,
+  audio: audioBuffer,
+  file: fileData
+});
+```
+
+<Tabs>
+  <Tab title="iOS">
+    ```swift
+    @BridgeMethod
+    func process(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        // Base64 strings are automatically converted to Data
+        let imageData = params["image"] as? Data
+        let audioData = params["audio"] as? Data
+        let fileData = params["file"] as? Data
+        
+        // Process binary data
+        if let imageData = imageData {
+            let image = UIImage(data: imageData)
+            // ...
+        }
+        
+        callback(.success(["processed": true]))
+    }
+    ```
+  </Tab>
+  <Tab title="Android">
+    ```kotlin
+    @BridgeMethod
+    fun process(params: Map<String, Any>, callback: BridgeCallback) {
+        // Base64 strings are automatically converted to ByteArray
+        val imageData = params["image"] as? ByteArray
+        val audioData = params["audio"] as? ByteArray
+        val fileData = params["file"] as? ByteArray
+        
+        // Process binary data
+        imageData?.let { data ->
+            val bitmap = BitmapFactory.decodeByteArray(data, 0, data.size)
+            // ...
+        }
+        
+        callback.success(mapOf("processed" to true))
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### File Handling
+
+```javascript
+// File serialization
+class FileHandler {
+  static async serializeFile(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    return {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: file.lastModified,
+      data: uint8Array
+    };
+  }
+  
+  static deserializeFile(fileData) {
+    const blob = new Blob([fileData.data], { type: fileData.type });
+    
+    // Create File-like object
+    return new File([blob], fileData.name, {
+      type: fileData.type,
+      lastModified: fileData.lastModified
+    });
+  }
+}
+
+// Usage
+const fileInput = document.querySelector('input[type="file"]');
+const file = fileInput.files[0];
+
+if (file) {
+  const serializedFile = await FileHandler.serializeFile(file);
+  const result = await bridge.execute('FileSystem.save', {
+    file: serializedFile
+  });
+}
+```
+
+## Performance Considerations
+
+### Large Data Optimization
+
+```javascript
+class DataOptimizer {
+  static optimizeForTransfer(data) {
+    const size = JSON.stringify(data).length;
+    
+    if (size > 1024 * 1024) { // 1MB threshold
+      return this.chunkData(data);
+    } else if (size > 10240) { // 10KB threshold
+      return this.compressData(data);
+    }
+    
+    return data;
+  }
+  
+  static chunkData(data, chunkSize = 64 * 1024) {
+    const serialized = JSON.stringify(data);
+    const chunks = [];
+    
+    for (let i = 0; i < serialized.length; i += chunkSize) {
+      chunks.push(serialized.slice(i, i + chunkSize));
+    }
+    
+    return {
+      _chunked: true,
+      _totalChunks: chunks.length,
+      _chunks: chunks
+    };
+  }
+  
+  static compressData(data) {
+    // Implement compression (e.g., using pako for gzip)
+    const compressed = pako.gzip(JSON.stringify(data));
+    
+    return {
+      _compressed: true,
+      _algorithm: 'gzip',
+      _data: Array.from(compressed)
+    };
+  }
+}
+
+// Automatic optimization in bridge
+bridge.configure({
+  serialization: {
+    autoOptimize: true,
+    chunkThreshold: 1024 * 1024,
+    compressionThreshold: 10240
+  }
+});
+```
+
+### Streaming Large Data
+
+```javascript
+// Stream large datasets
+class DataStreamer {
+  async streamToNative(data, streamId) {
+    const chunkSize = 64 * 1024; // 64KB chunks
+    const totalSize = data.length;
+    let offset = 0;
+    
+    // Start stream
+    await bridge.execute('Stream.start', {
+      streamId,
+      totalSize,
+      chunkSize
+    });
+    
+    // Send chunks
+    while (offset < totalSize) {
+      const chunk = data.slice(offset, offset + chunkSize);
+      
+      await bridge.execute('Stream.chunk', {
+        streamId,
+        offset,
+        data: chunk,
+        isLast: offset + chunkSize >= totalSize
+      });
+      
+      offset += chunkSize;
+    }
+    
+    // Finalize stream
+    return await bridge.execute('Stream.finalize', { streamId });
+  }
+}
+```
+
+## Type Safety
+
+### TypeScript Integration
+
+Define strict types for your bridge interfaces:
+
+```typescript
+// Define data types
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  preferences: UserPreferences;
+  tags: string[];
+}
+
+interface UserPreferences {
+  theme: 'light' | 'dark';
+  notifications: boolean;
+  language: string;
+}
+
+// Define module interface
+interface UserModule {
+  create(user: User): Promise<{ userId: number }>;
+  update(id: number, changes: Partial<User>): Promise<{ success: boolean }>;
+  delete(id: number): Promise<{ success: boolean }>;
+  list(filters?: UserFilters): Promise<User[]>;
+}
+
+// Use with bridge
+const userModule = bridge.modules.User as UserModule;
+
+const newUser: User = {
+  id: 0,
+  name: "Jane Doe",
+  email: "jane@example.com",
+  preferences: {
+    theme: "dark",
+    notifications: true,
+    language: "en"
+  },
+  tags: ["user"]
+};
+
+const result = await userModule.create(newUser);
+// TypeScript ensures type safety
+```
+
+### Runtime Validation
+
+```javascript
+// Runtime type validation
+class TypeValidator {
+  static validate(data, schema) {
+    const errors = [];
+    
+    for (const [key, expectedType] of Object.entries(schema)) {
+      const value = data[key];
+      const actualType = this.getType(value);
+      
+      if (actualType !== expectedType) {
+        errors.push(`${key}: expected ${expectedType}, got ${actualType}`);
+      }
+    }
+    
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+  
+  static getType(value) {
+    if (value === null) return 'null';
+    if (Array.isArray(value)) return 'array';
+    return typeof value;
+  }
+}
+
+// Use in bridge methods
+bridge.registerModule('User', {
+  create: bridge.method({
+    schema: {
+      name: 'string',
+      email: 'string',
+      age: 'number'
+    }
+  }, async (params) => {
+    // Params are validated before this function is called
+    const user = await createUser(params);
+    return { userId: user.id };
+  })
+});
+```
+
+## Error Handling
+
+### Serialization Errors
+
+```javascript
+class SerializationError extends Error {
+  constructor(message, data, path) {
+    super(message);
+    this.name = 'SerializationError';
+    this.data = data;
+    this.path = path;
+  }
+}
+
+class SafeSerializer {
+  static serialize(data, path = '') {
+    try {
+      if (data === undefined) {
+        return null; // Convert undefined to null
+      }
+      
+      if (typeof data === 'function') {
+        throw new SerializationError(
+          'Functions cannot be serialized',
+          data,
+          path
+        );
+      }
+      
+      if (data instanceof Error) {
+        return {
+          _error: true,
+          name: data.name,
+          message: data.message,
+          stack: data.stack
+        };
+      }
+      
+      if (data && typeof data === 'object') {
+        if (data.constructor !== Object && !Array.isArray(data)) {
+          // Handle custom objects
+          return this.serializeCustomObject(data, path);
+        }
+        
+        const result = Array.isArray(data) ? [] : {};
+        
+        for (const [key, value] of Object.entries(data)) {
+          const currentPath = path ? `${path}.${key}` : key;
+          result[key] = this.serialize(value, currentPath);
+        }
+        
+        return result;
+      }
+      
+      return data;
+      
+    } catch (error) {
+      throw new SerializationError(
+        `Serialization failed at ${path}: ${error.message}`,
+        data,
+        path
+      );
+    }
+  }
+  
+  static serializeCustomObject(obj, path) {
+    // Handle specific object types
+    if (obj instanceof Date) {
+      return { _date: obj.toISOString() };
+    }
+    
+    if (obj instanceof RegExp) {
+      return { _regex: obj.toString() };
+    }
+    
+    if (obj instanceof Map) {
+      return {
+        _map: Array.from(obj.entries())
+      };
+    }
+    
+    if (obj instanceof Set) {
+      return {
+        _set: Array.from(obj.values())
+      };
+    }
+    
+    // For unknown objects, try to serialize properties
+    console.warn(`Unknown object type at ${path}, attempting property serialization`);
+    return Object.fromEntries(
+      Object.getOwnPropertyNames(obj)
+        .filter(key => typeof obj[key] !== 'function')
+        .map(key => [key, this.serialize(obj[key], `${path}.${key}`)])
+    );
+  }
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion icon="rocket" title="Performance">
+    - Use primitive types when possible for best performance
+    - Minimize deep nesting in objects
+    - Consider chunking or streaming for large datasets
+    - Use compression for repetitive data
+    - Cache serialized data when appropriate
+  </Accordion>
+  
+  <Accordion icon="shield" title="Type Safety">
+    - Define TypeScript interfaces for all data structures
+    - Validate data at runtime when necessary
+    - Use schema validation for public APIs
+    - Document expected data formats
+    - Handle serialization errors gracefully
+  </Accordion>
+  
+  <Accordion icon="database" title="Data Integrity">
+    - Validate data before serialization
+    - Handle circular references
+    - Preserve data types across platforms
+    - Use checksums for critical data
+    - Implement data versioning for compatibility
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="JavaScript API"
+    icon="code"
+    href="/api/javascript-api"
+  >
+    Explore the complete JavaScript bridge API
+  </Card>
+  <Card
+    title="iOS API"
+    icon="apple"
+    href="/api/ios-api"
+  >
+    Learn about iOS-specific bridge implementation
+  </Card>
+</CardGroup>

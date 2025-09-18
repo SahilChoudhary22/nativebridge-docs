@@ -1,0 +1,900 @@
+---
+title: "iOS Integration"
+description: "Complete guide to integrating NativeBridge in your iOS application"
+---
+
+## Prerequisites
+
+Before integrating NativeBridge into your iOS project, ensure you have:
+
+- **Xcode 14.0+** with iOS 12.0+ deployment target
+- **Swift 5.5+** for modern async/await support
+- **CocoaPods 1.11+** or **Swift Package Manager**
+- Basic understanding of iOS development and WebView usage
+
+## Installation
+
+<Tabs>
+  <Tab title="Swift Package Manager">
+    ### Add Package Dependency
+    
+    1. In Xcode, go to **File → Add Package Dependencies...**
+    2. Enter the repository URL:
+    ```
+    https://github.com/nativebridge/nativebridge-ios
+    ```
+    3. Select version **1.0.0** or later
+    4. Add to your target
+    
+    ### Import in Code
+    
+    ```swift
+    import NativeBridge
+    ```
+  </Tab>
+  
+  <Tab title="CocoaPods">
+    ### Add to Podfile
+    
+    ```ruby Podfile
+    platform :ios, '12.0'
+    use_frameworks!
+    
+    target 'YourApp' do
+      pod 'NativeBridge', '~> 1.0'
+    end
+    ```
+    
+    ### Install
+    
+    ```bash
+    cd ios
+    pod install
+    ```
+    
+    ### Import in Code
+    
+    ```swift
+    import NativeBridge
+    ```
+  </Tab>
+  
+  <Tab title="Manual">
+    ### Download Framework
+    
+    1. Download the latest `NativeBridge.xcframework` from [GitHub Releases](https://github.com/nativebridge/nativebridge-ios/releases)
+    2. Drag the framework into your Xcode project
+    3. Ensure it's added to **Frameworks, Libraries, and Embedded Content**
+    4. Set **Embed** to **Embed & Sign**
+    
+    ### Import in Code
+    
+    ```swift
+    import NativeBridge
+    ```
+  </Tab>
+</Tabs>
+
+## Basic Setup
+
+### 1. Initialize NativeBridge
+
+Add initialization code to your `AppDelegate.swift`:
+
+```swift AppDelegate.swift
+import UIKit
+import NativeBridge
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    
+    func application(_ application: UIApplication, 
+                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        
+        // Configure NativeBridge
+        let config = NativeBridgeConfig()
+        config.debugMode = true  // Enable for development
+        config.logLevel = .verbose
+        config.messageTimeout = 10.0
+        
+        // Initialize the bridge
+        NativeBridge.shared.initialize(config: config)
+        
+        // Register your modules
+        registerNativeModules()
+        
+        return true
+    }
+    
+    private func registerNativeModules() {
+        let bridge = NativeBridge.shared
+        
+        // Register core modules
+        bridge.registerModule(DeviceModule())
+        bridge.registerModule(StorageModule())
+        bridge.registerModule(CameraModule())
+        bridge.registerModule(LocationModule())
+    }
+}
+```
+
+### 2. WebView Integration
+
+Create a view controller with an integrated WebView:
+
+```swift WebViewController.swift
+import UIKit
+import WebKit
+import NativeBridge
+
+class WebViewController: UIViewController {
+    
+    @IBOutlet weak var webView: WKWebView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupWebView()
+        loadWebContent()
+    }
+    
+    private func setupWebView() {
+        // Configure WebView settings
+        webView.configuration.preferences.javaScriptEnabled = true
+        webView.configuration.allowsInlineMediaPlayback = true
+        
+        // Attach NativeBridge to WebView
+        NativeBridge.shared.attach(to: webView)
+        
+        // Set navigation delegate (optional)
+        webView.navigationDelegate = self
+    }
+    
+    private func loadWebContent() {
+        // Load your web application
+        if let url = URL(string: "https://yourapp.com") {
+            let request = URLRequest(url: url)
+            webView.load(request)
+        }
+        
+        // Or load local HTML
+        // loadLocalHTML()
+    }
+    
+    private func loadLocalHTML() {
+        guard let htmlPath = Bundle.main.path(forResource: "index", ofType: "html"),
+              let htmlContent = try? String(contentsOfFile: htmlPath) else {
+            print("Failed to load local HTML")
+            return
+        }
+        
+        let baseURL = URL(fileURLWithPath: htmlPath).deletingLastPathComponent()
+        webView.loadHTMLString(htmlContent, baseURL: baseURL)
+    }
+}
+
+// MARK: - WKNavigationDelegate
+extension WebViewController: WKNavigationDelegate {
+    
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        print("Web content loaded successfully")
+        
+        // Optional: Inject additional JavaScript
+        let script = """
+            console.log('NativeBridge is ready!');
+            if (window.NativeBridge) {
+                window.NativeBridge.emit('webview.ready', { timestamp: Date.now() });
+            }
+        """
+        
+        webView.evaluateJavaScript(script) { result, error in
+            if let error = error {
+                print("JavaScript execution error: \(error)")
+            }
+        }
+    }
+    
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        print("WebView navigation failed: \(error.localizedDescription)")
+    }
+}
+```
+
+## Creating Native Modules
+
+### Device Information Module
+
+Create a module to provide device information:
+
+```swift DeviceModule.swift
+import Foundation
+import UIKit
+import NativeBridge
+
+class DeviceModule: NativeBridgeModule {
+    
+    override func getName() -> String {
+        return "Device"
+    }
+    
+    override func configure() {
+        self.timeout = 5.0
+        self.requiresMainThread = false
+        self.cacheable = true
+    }
+    
+    @BridgeMethod
+    func getDeviceInfo(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let device = UIDevice.current
+        
+        let info: [String: Any] = [
+            "model": device.model,
+            "systemName": device.systemName,
+            "systemVersion": device.systemVersion,
+            "name": device.name,
+            "identifier": device.identifierForVendor?.uuidString ?? "",
+            "platform": "ios",
+            "isSimulator": isSimulator()
+        ]
+        
+        callback(.success(info))
+    }
+    
+    @BridgeMethod
+    func getScreenInfo(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let screen = UIScreen.main
+        let bounds = screen.bounds
+        let scale = screen.scale
+        
+        let info: [String: Any] = [
+            "width": Int(bounds.width * scale),
+            "height": Int(bounds.height * scale),
+            "scale": scale,
+            "density": scale * 160  // Convert to Android-like DPI
+        ]
+        
+        callback(.success(info))
+    }
+    
+    @BridgeMethod
+    func vibrate(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let duration = params["duration"] as? TimeInterval ?? 0.5
+        let intensity = params["intensity"] as? String ?? "medium"
+        
+        DispatchQueue.main.async {
+            switch intensity {
+            case "light":
+                let feedback = UIImpactFeedbackGenerator(style: .light)
+                feedback.impactOccurred()
+            case "heavy":
+                let feedback = UIImpactFeedbackGenerator(style: .heavy)
+                feedback.impactOccurred()
+            default:
+                let feedback = UIImpactFeedbackGenerator(style: .medium)
+                feedback.impactOccurred()
+            }
+            
+            callback(.success(nil))
+        }
+    }
+    
+    private func isSimulator() -> Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
+}
+```
+
+### Camera Module
+
+Implement camera functionality:
+
+```swift CameraModule.swift
+import Foundation
+import UIKit
+import AVFoundation
+import NativeBridge
+
+class CameraModule: NativeBridgeModule {
+    
+    private var currentCallback: BridgeCallback?
+    private weak var presentingViewController: UIViewController?
+    
+    override func getName() -> String {
+        return "Camera"
+    }
+    
+    override func configure() {
+        self.timeout = 30.0  // Camera operations can take time
+        self.requiresMainThread = true
+    }
+    
+    @BridgeMethod
+    func getPermissions(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        let permission: String
+        switch status {
+        case .authorized:
+            permission = "granted"
+        case .denied, .restricted:
+            permission = "denied"
+        case .notDetermined:
+            permission = "prompt"
+        @unknown default:
+            permission = "unknown"
+        }
+        
+        callback(.success(["camera": permission]))
+    }
+    
+    @BridgeMethod
+    func requestPermissions(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            DispatchQueue.main.async {
+                callback(.success(["granted": granted]))
+            }
+        }
+    }
+    
+    @BridgeMethod
+    func takePicture(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        // Check permissions first
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        guard status == .authorized else {
+            callback(.error(BridgeError(
+                code: "PERMISSION_DENIED",
+                message: "Camera permission not granted",
+                domain: "Camera"
+            )))
+            return
+        }
+        
+        // Check if camera is available
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            callback(.error(BridgeError(
+                code: "FEATURE_UNAVAILABLE",
+                message: "Camera not available on this device",
+                domain: "Camera"
+            )))
+            return
+        }
+        
+        // Store callback for later use
+        self.currentCallback = callback
+        
+        // Configure image picker
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.allowsEditing = params["allowEdit"] as? Bool ?? false
+        picker.delegate = self
+        
+        // Set camera type
+        if let cameraType = params["camera"] as? String {
+            switch cameraType {
+            case "front":
+                if UIImagePickerController.isCameraDeviceAvailable(.front) {
+                    picker.cameraDevice = .front
+                }
+            case "back":
+                if UIImagePickerController.isCameraDeviceAvailable(.rear) {
+                    picker.cameraDevice = .rear
+                }
+            default:
+                break
+            }
+        }
+        
+        // Present camera
+        DispatchQueue.main.async {
+            if let viewController = self.findPresentingViewController() {
+                self.presentingViewController = viewController
+                viewController.present(picker, animated: true)
+            } else {
+                callback(.error(BridgeError(
+                    code: "UI_ERROR",
+                    message: "No view controller available to present camera",
+                    domain: "Camera"
+                )))
+            }
+        }
+    }
+    
+    private func findPresentingViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }) else {
+            return nil
+        }
+        
+        var topController = window.rootViewController
+        while let presentedController = topController?.presentedViewController {
+            topController = presentedController
+        }
+        
+        return topController
+    }
+}
+
+// MARK: - UIImagePickerControllerDelegate
+extension CameraModule: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    
+    func imagePickerController(_ picker: UIImagePickerController, 
+                              didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+        
+        picker.dismiss(animated: true) {
+            guard let callback = self.currentCallback else { return }
+            
+            if let image = info[.originalImage] as? UIImage ?? info[.editedImage] as? UIImage {
+                self.processImage(image, callback: callback)
+            } else {
+                callback(.error(BridgeError(
+                    code: "CAPTURE_ERROR",
+                    message: "Failed to capture image",
+                    domain: "Camera"
+                )))
+            }
+            
+            self.currentCallback = nil
+        }
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true) {
+            self.currentCallback?(.error(BridgeError(
+                code: "OPERATION_CANCELLED",
+                message: "Camera operation was cancelled",
+                domain: "Camera"
+            )))
+            self.currentCallback = nil
+        }
+    }
+    
+    private func processImage(_ image: UIImage, callback: @escaping BridgeCallback) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Convert to JPEG with quality
+            let quality: CGFloat = 0.8  // Could be parameterized
+            guard let imageData = image.jpegData(compressionQuality: quality) else {
+                DispatchQueue.main.async {
+                    callback(.error(BridgeError(
+                        code: "PROCESSING_ERROR",
+                        message: "Failed to process image",
+                        domain: "Camera"
+                    )))
+                }
+                return
+            }
+            
+            let base64String = imageData.base64EncodedString()
+            
+            let result: [String: Any] = [
+                "image": base64String,
+                "width": Int(image.size.width),
+                "height": Int(image.size.height),
+                "size": imageData.count,
+                "format": "jpeg",
+                "timestamp": Date().timeIntervalSince1970
+            ]
+            
+            DispatchQueue.main.async {
+                callback(.success(result))
+                
+                // Emit event
+                self.emit("pictureReady", data: result)
+            }
+        }
+    }
+}
+```
+
+## Advanced Features
+
+### Custom WebView Configuration
+
+For more control over the WebView setup:
+
+```swift CustomWebView.swift
+import WebKit
+import NativeBridge
+
+class CustomWebView: WKWebView {
+    
+    override init(frame: CGRect, configuration: WKWebViewConfiguration) {
+        // Create custom configuration
+        let customConfig = Self.createConfiguration()
+        super.init(frame: frame, configuration: customConfig)
+        
+        setupWebView()
+        attachBridge()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupWebView()
+        attachBridge()
+    }
+    
+    private static func createConfiguration() -> WKWebViewConfiguration {
+        let config = WKWebViewConfiguration()
+        
+        // JavaScript preferences
+        config.preferences.javaScriptEnabled = true
+        config.preferences.javaScriptCanOpenWindowsAutomatically = false
+        
+        // Media preferences
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []
+        
+        // Data store (for cookies, local storage)
+        config.websiteDataStore = .default()
+        
+        return config
+    }
+    
+    private func setupWebView() {
+        // Disable scrolling if needed
+        scrollView.isScrollEnabled = true
+        scrollView.bounces = false
+        
+        // Disable zoom
+        scrollView.minimumZoomScale = 1.0
+        scrollView.maximumZoomScale = 1.0
+        
+        // Background color
+        backgroundColor = .systemBackground
+        isOpaque = false
+    }
+    
+    private func attachBridge() {
+        // Attach NativeBridge with custom configuration
+        let bridgeConfig = WebViewBridgeConfig()
+        bridgeConfig.messageHandlerName = "nativeBridge"
+        bridgeConfig.injectBridgeScript = true
+        bridgeConfig.enableLogging = true
+        
+        NativeBridge.shared.attach(to: self, config: bridgeConfig)
+    }
+}
+```
+
+### Event Handling
+
+Listen for events from JavaScript:
+
+```swift EventHandling.swift
+class EventHandler {
+    
+    init() {
+        setupEventListeners()
+    }
+    
+    private func setupEventListeners() {
+        let bridge = NativeBridge.shared
+        
+        // Listen for JavaScript events
+        bridge.on("app.ready") { [weak self] data in
+            print("App is ready with data: \(data)")
+            self?.handleAppReady(data)
+        }
+        
+        bridge.on("user.action") { [weak self] data in
+            self?.handleUserAction(data)
+        }
+        
+        bridge.on("navigation.changed") { [weak self] data in
+            self?.handleNavigationChange(data)
+        }
+    }
+    
+    private func handleAppReady(_ data: Any?) {
+        // Handle app ready event
+        DispatchQueue.main.async {
+            // Update UI, send initial data, etc.
+        }
+    }
+    
+    private func handleUserAction(_ data: Any?) {
+        guard let actionData = data as? [String: Any],
+              let action = actionData["type"] as? String else {
+            return
+        }
+        
+        switch action {
+        case "purchase":
+            handlePurchaseAction(actionData)
+        case "share":
+            handleShareAction(actionData)
+        default:
+            print("Unknown action: \(action)")
+        }
+    }
+    
+    private func handleNavigationChange(_ data: Any?) {
+        // Handle navigation changes
+        if let navData = data as? [String: Any],
+           let route = navData["route"] as? String {
+            print("Navigation changed to: \(route)")
+        }
+    }
+    
+    private func handlePurchaseAction(_ data: [String: Any]) {
+        // Handle purchase logic
+    }
+    
+    private func handleShareAction(_ data: [String: Any]) {
+        // Handle share logic
+    }
+}
+```
+
+## Debug Configuration
+
+### Development Settings
+
+Optimal settings for development:
+
+```swift DebugConfig.swift
+#if DEBUG
+class DebugConfiguration {
+    
+    static func setupForDevelopment() {
+        let config = NativeBridgeConfig()
+        
+        // Enable all debugging features
+        config.debugMode = true
+        config.logLevel = .verbose
+        config.enableMessageLogging = true
+        config.logMessagePayloads = true
+        
+        // Shorter timeouts for faster debugging
+        config.messageTimeout = 5.0
+        
+        // Enable development features
+        config.allowAllOrigins = true  // Only for development!
+        
+        NativeBridge.shared.initialize(config: config)
+        
+        // Set up debug event handlers
+        setupDebugEventHandlers()
+    }
+    
+    private static func setupDebugEventHandlers() {
+        let bridge = NativeBridge.shared
+        
+        bridge.onError { error in
+            print("🚨 Bridge Error: [\(error.code)] \(error.message)")
+            if let nativeStack = error.nativeStack {
+                print("Native Stack: \(nativeStack)")
+            }
+        }
+        
+        bridge.on("debug.message") { data in
+            print("🐛 Debug: \(data ?? "nil")")
+        }
+    }
+}
+#endif
+```
+
+### Production Settings
+
+```swift ProductionConfig.swift
+#if !DEBUG
+class ProductionConfiguration {
+    
+    static func setupForProduction() {
+        let config = NativeBridgeConfig()
+        
+        // Minimal logging
+        config.debugMode = false
+        config.logLevel = .error
+        config.enableMessageLogging = false
+        
+        // Appropriate timeouts
+        config.messageTimeout = 10.0
+        
+        // Security settings
+        config.validateMessages = true
+        config.allowedOrigins = ["https://yourapp.com"]
+        
+        NativeBridge.shared.initialize(config: config)
+        
+        // Set up error reporting
+        setupErrorReporting()
+    }
+    
+    private static func setupErrorReporting() {
+        NativeBridge.shared.onError { error in
+            // Send to crash reporting service
+            CrashReporting.recordError(error)
+        }
+    }
+}
+#endif
+```
+
+## Testing
+
+### Unit Testing Modules
+
+```swift DeviceModuleTests.swift
+import XCTest
+@testable import YourApp
+@testable import NativeBridge
+
+class DeviceModuleTests: XCTestCase {
+    
+    var deviceModule: DeviceModule!
+    var mockBridge: MockNativeBridge!
+    
+    override func setUp() {
+        super.setUp()
+        deviceModule = DeviceModule()
+        mockBridge = MockNativeBridge()
+        deviceModule.setBridge(mockBridge)
+    }
+    
+    func testGetDeviceInfo() {
+        let expectation = XCTestExpectation(description: "Get device info")
+        
+        deviceModule.getDeviceInfo([:]) { result in
+            switch result {
+            case .success(let data):
+                guard let deviceInfo = data as? [String: Any] else {
+                    XCTFail("Invalid response format")
+                    return
+                }
+                
+                XCTAssertNotNil(deviceInfo["model"])
+                XCTAssertNotNil(deviceInfo["systemName"])
+                XCTAssertEqual(deviceInfo["platform"] as? String, "ios")
+                expectation.fulfill()
+                
+            case .error(let error):
+                XCTFail("Unexpected error: \(error.message)")
+            }
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func testVibrate() {
+        let expectation = XCTestExpectation(description: "Vibrate device")
+        
+        deviceModule.vibrate(["intensity": "heavy"]) { result in
+            switch result {
+            case .success:
+                expectation.fulfill()
+            case .error(let error):
+                XCTFail("Unexpected error: \(error.message)")
+            }
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+}
+```
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion icon="exclamation-triangle" title="Bridge Not Ready">
+    **Symptoms**: Methods fail with "Bridge not ready" error
+    
+    **Solutions**:
+    - Ensure `NativeBridge.shared.initialize()` is called in `AppDelegate`
+    - Wait for WebView to finish loading before calling bridge methods
+    - Check if bridge is attached to the correct WebView instance
+    
+    ```swift
+    // Check if bridge is ready
+    if NativeBridge.shared.isReady {
+        // Safe to call bridge methods
+    } else {
+        // Wait for bridge to be ready
+        NativeBridge.shared.onReady {
+            // Now safe to call bridge methods
+        }
+    }
+    ```
+  </Accordion>
+  
+  <Accordion icon="exclamation-triangle" title="Module Not Found">
+    **Symptoms**: "Module not found" errors when calling methods
+    
+    **Solutions**:
+    - Verify module is registered in `AppDelegate`
+    - Check module name matches exactly (case-sensitive)
+    - Ensure module class inherits from `NativeBridgeModule`
+    
+    ```swift
+    // Debug registered modules
+    let registeredModules = NativeBridge.shared.getRegisteredModules()
+    print("Registered modules: \(registeredModules)")
+    ```
+  </Accordion>
+  
+  <Accordion icon="exclamation-triangle" title="WebView Not Loading">
+    **Symptoms**: WebView shows blank page or fails to load
+    
+    **Solutions**:
+    - Check network connectivity and URL validity
+    - Verify App Transport Security settings
+    - Enable WebView debugging in development
+    
+    ```swift
+    // Enable WebView debugging
+    if #available(iOS 16.4, *) {
+        webView.isInspectable = true
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Debug Tools
+
+```swift DebugTools.swift
+class BridgeDebugTools {
+    
+    static func enableWebViewDebugging(_ webView: WKWebView) {
+        if #available(iOS 16.4, *) {
+            webView.isInspectable = true
+        }
+        
+        // Add debug console
+        let script = """
+            console.log('WebView debug mode enabled');
+            window.addEventListener('error', function(e) {
+                console.error('JavaScript Error:', e.error);
+            });
+        """
+        
+        let userScript = WKUserScript(source: script, 
+                                     injectionTime: .atDocumentEnd, 
+                                     forMainFrameOnly: true)
+        webView.configuration.userContentController.addUserScript(userScript)
+    }
+    
+    static func logBridgeTraffic() {
+        let bridge = NativeBridge.shared
+        
+        bridge.onMessageSent { message in
+            print("📤 Sent: \(message)")
+        }
+        
+        bridge.onMessageReceived { message in
+            print("📥 Received: \(message)")
+        }
+    }
+}
+```
+
+## Performance Tips
+
+1. **Lazy Module Registration**: Only register modules when needed
+2. **Efficient Data Transfer**: Minimize large data transfers between JS and native
+3. **Background Processing**: Use background queues for heavy operations
+4. **Memory Management**: Properly manage WebView and module lifecycle
+5. **Caching**: Use module-level caching for expensive operations
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Android Integration"
+    icon="android"
+    href="/guides/android-integration"
+  >
+    Learn how to integrate NativeBridge in Android
+  </Card>
+  <Card
+    title="Debugging Guide"
+    icon="bug"
+    href="/guides/debugging"
+  >
+    Debug and troubleshoot bridge issues
+  </Card>
+</CardGroup>

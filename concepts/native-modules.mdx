@@ -1,0 +1,564 @@
+---
+title: "Native Modules"
+description: "Creating, registering, and managing native modules in NativeBridge"
+---
+
+## What are Native Modules?
+
+Native modules are self-contained units of functionality that expose native iOS and Android capabilities to your JavaScript application. They serve as the building blocks of the bridge, organizing related functionality into logical groups.
+
+## Module Structure
+
+Each module consists of:
+- **Name**: Unique identifier for the module
+- **Methods**: Callable functions exposed to JavaScript
+- **Events**: Notifications sent from native to JavaScript
+- **Configuration**: Module-specific settings and options
+
+```javascript
+// JavaScript module interface
+const module = {
+  name: 'Camera',
+  methods: ['takePicture', 'selectFromGallery', 'getPermissions'],
+  events: ['pictureReady', 'permissionChanged'],
+  config: { quality: 'high', format: 'jpeg' }
+};
+```
+
+## Creating Native Modules
+
+### iOS Module (Swift)
+
+```swift CameraModule.swift
+import Foundation
+import UIKit
+import AVFoundation
+import NativeBridge
+
+class CameraModule: NativeBridgeModule {
+    
+    override func getName() -> String {
+        return "Camera"
+    }
+    
+    override func configure() {
+        // Module configuration
+        self.timeout = 30.0  // 30 second timeout for camera operations
+        self.requiresMainThread = true
+    }
+    
+    // MARK: - Camera Methods
+    
+    @BridgeMethod
+    func takePicture(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        guard let quality = params["quality"] as? String else {
+            callback(.error(BridgeError.invalidParams("quality parameter required")))
+            return
+        }
+        
+        DispatchQueue.main.async {
+            self.presentImagePicker(quality: quality, callback: callback)
+        }
+    }
+    
+    @BridgeMethod
+    func getPermissions(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        
+        let permission: String
+        switch status {
+        case .authorized:
+            permission = "granted"
+        case .denied, .restricted:
+            permission = "denied"
+        case .notDetermined:
+            permission = "prompt"
+        @unknown default:
+            permission = "unknown"
+        }
+        
+        callback(.success(["camera": permission]))
+    }
+    
+    @BridgeMethod
+    func requestPermissions(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        AVCaptureDevice.requestAccess(for: .video) { granted in
+            DispatchQueue.main.async {
+                callback(.success(["granted": granted]))
+            }
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private func presentImagePicker(quality: String, callback: @escaping BridgeCallback) {
+        // Implementation details...
+        let picker = UIImagePickerController()
+        // ... configure picker
+        
+        // Emit event when ready
+        self.emit("cameraReady", data: ["status": "initialized"])
+    }
+    
+    // MARK: - Event Emission
+    
+    private func emitPictureReady(_ imageData: Data) {
+        let base64Image = imageData.base64EncodedString()
+        self.emit("pictureReady", data: [
+            "image": base64Image,
+            "timestamp": Date().timeIntervalSince1970,
+            "quality": "high"
+        ])
+    }
+}
+```
+
+### Android Module (Kotlin)
+
+```kotlin CameraModule.kt
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.util.Base64
+import androidx.core.content.ContextCompat
+import com.nativebridge.BridgeModule
+import com.nativebridge.BridgeMethod
+import com.nativebridge.BridgeCallback
+import java.io.ByteArrayOutputStream
+
+class CameraModule(private val context: Context) : BridgeModule() {
+    
+    override fun getName(): String = "Camera"
+    
+    override fun configure() {
+        // Module configuration
+        timeout = 30000  // 30 second timeout
+        requiresMainThread = true
+    }
+    
+    // MARK: - Camera Methods
+    
+    @BridgeMethod
+    fun takePicture(params: Map<String, Any>, callback: BridgeCallback) {
+        val quality = params["quality"] as? String
+        if (quality == null) {
+            callback.error("quality parameter required")
+            return
+        }
+        
+        // Check permissions first
+        if (!hasPermissions()) {
+            callback.error("Camera permission not granted")
+            return
+        }
+        
+        // Launch camera intent
+        launchCamera(quality, callback)
+    }
+    
+    @BridgeMethod
+    fun getPermissions(params: Map<String, Any>, callback: BridgeCallback) {
+        val cameraPermission = ContextCompat.checkSelfPermission(
+            context, 
+            android.Manifest.permission.CAMERA
+        )
+        
+        val permission = when (cameraPermission) {
+            PackageManager.PERMISSION_GRANTED -> "granted"
+            PackageManager.PERMISSION_DENIED -> "denied"
+            else -> "prompt"
+        }
+        
+        callback.success(mapOf("camera" to permission))
+    }
+    
+    @BridgeMethod
+    fun requestPermissions(params: Map<String, Any>, callback: BridgeCallback) {
+        // Implementation would use ActivityCompat.requestPermissions
+        // This requires activity context which would be passed during initialization
+        requestCameraPermission { granted ->
+            callback.success(mapOf("granted" to granted))
+        }
+    }
+    
+    // MARK: - Private Methods
+    
+    private fun hasPermissions(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context, 
+            android.Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    private fun launchCamera(quality: String, callback: BridgeCallback) {
+        // Implementation details...
+        
+        // Emit event when ready
+        emit("cameraReady", mapOf("status" to "initialized"))
+    }
+    
+    private fun emitPictureReady(bitmap: Bitmap) {
+        val outputStream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+        val base64Image = Base64.encodeToString(outputStream.toByteArray(), Base64.DEFAULT)
+        
+        emit("pictureReady", mapOf(
+            "image" to base64Image,
+            "timestamp" to System.currentTimeMillis(),
+            "quality" to "high"
+        ))
+    }
+}
+```
+
+## JavaScript Module Interface
+
+Create a TypeScript interface for your module:
+
+```typescript camera.types.ts
+export interface CameraModuleInterface {
+  takePicture(options: {
+    quality: 'low' | 'medium' | 'high';
+    format?: 'jpeg' | 'png';
+    maxWidth?: number;
+    maxHeight?: number;
+  }): Promise<{
+    image: string; // base64 encoded
+    width: number;
+    height: number;
+    size: number;
+  }>;
+  
+  getPermissions(): Promise<{
+    camera: 'granted' | 'denied' | 'prompt';
+  }>;
+  
+  requestPermissions(): Promise<{
+    granted: boolean;
+  }>;
+}
+
+export interface CameraEvents {
+  pictureReady: {
+    image: string;
+    timestamp: number;
+    quality: string;
+  };
+  
+  cameraReady: {
+    status: 'initialized' | 'ready' | 'error';
+  };
+  
+  permissionChanged: {
+    permission: 'granted' | 'denied';
+  };
+}
+```
+
+## Module Registration
+
+### iOS Registration
+
+```swift AppDelegate.swift
+import NativeBridge
+
+func application(_ application: UIApplication,
+                didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    
+    // Initialize NativeBridge
+    NativeBridge.shared.initialize()
+    
+    // Register modules
+    NativeBridge.shared.registerModule(CameraModule())
+    NativeBridge.shared.registerModule(StorageModule())
+    NativeBridge.shared.registerModule(DeviceModule())
+    NativeBridge.shared.registerModule(NetworkModule())
+    
+    return true
+}
+```
+
+### Android Registration
+
+```kotlin Application.kt
+import com.nativebridge.NativeBridge
+
+class MyApplication : Application() {
+    
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Initialize NativeBridge
+        NativeBridge.initialize(this)
+        
+        // Register modules
+        NativeBridge.registerModule(CameraModule(this))
+        NativeBridge.registerModule(StorageModule(this))
+        NativeBridge.registerModule(DeviceModule(this))
+        NativeBridge.registerModule(NetworkModule(this))
+    }
+}
+```
+
+### JavaScript Usage
+
+```typescript camera.service.ts
+import { NativeBridge } from '@nativebridge/core';
+import { CameraModuleInterface, CameraEvents } from './camera.types';
+
+class CameraService {
+  private bridge: NativeBridge;
+  
+  constructor(bridge: NativeBridge) {
+    this.bridge = bridge;
+    this.setupEventListeners();
+  }
+  
+  // Type-safe module access
+  get camera(): CameraModuleInterface {
+    return this.bridge.modules.Camera;
+  }
+  
+  async takePicture(quality: 'low' | 'medium' | 'high' = 'high') {
+    try {
+      // Check permissions first
+      const permissions = await this.camera.getPermissions();
+      
+      if (permissions.camera !== 'granted') {
+        const result = await this.camera.requestPermissions();
+        if (!result.granted) {
+          throw new Error('Camera permission denied');
+        }
+      }
+      
+      // Take picture
+      const result = await this.camera.takePicture({ quality });
+      return result;
+      
+    } catch (error) {
+      console.error('Failed to take picture:', error);
+      throw error;
+    }
+  }
+  
+  private setupEventListeners() {
+    // Listen for picture ready event
+    this.bridge.on<CameraEvents['pictureReady']>('Camera.pictureReady', (data) => {
+      console.log('Picture ready:', data.timestamp);
+      // Handle the captured image
+    });
+    
+    // Listen for camera ready event
+    this.bridge.on<CameraEvents['cameraReady']>('Camera.cameraReady', (data) => {
+      console.log('Camera status:', data.status);
+    });
+  }
+  
+  destroy() {
+    // Clean up event listeners
+    this.bridge.off('Camera.pictureReady');
+    this.bridge.off('Camera.cameraReady');
+  }
+}
+
+// Usage
+const cameraService = new CameraService(bridge);
+const photo = await cameraService.takePicture('high');
+```
+
+## Module Lifecycle
+
+### Initialization Order
+
+1. **Module Creation**: Instantiate module class
+2. **Registration**: Register with NativeBridge
+3. **Configuration**: Apply module-specific settings
+4. **Method Binding**: Bind methods to bridge protocol
+5. **Event Setup**: Initialize event emitters
+6. **Ready State**: Module available for JavaScript calls
+
+```swift
+// Module lifecycle hooks
+class MyModule: NativeBridgeModule {
+    
+    override func configure() {
+        // Called during registration
+    }
+    
+    override func initialize() {
+        // Called when bridge is ready
+    }
+    
+    override func teardown() {
+        // Called during cleanup
+    }
+}
+```
+
+## Module Communication
+
+### Inter-Module Communication
+
+Modules can communicate with each other:
+
+```swift
+class AnalyticsModule: NativeBridgeModule {
+    
+    @BridgeMethod
+    func trackCameraUsage(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        // Get data from Camera module
+        if let cameraModule = NativeBridge.shared.getModule("Camera") as? CameraModule {
+            let usage = cameraModule.getUsageStats()
+            // Track analytics...
+        }
+        
+        callback(.success(nil))
+    }
+}
+```
+
+### Module Dependencies
+
+Declare dependencies between modules:
+
+```swift
+class PhotoEditorModule: NativeBridgeModule {
+    
+    override func getDependencies() -> [String] {
+        return ["Camera", "Storage"]
+    }
+    
+    override func configure() {
+        // Ensure dependencies are available
+        guard hasRequiredDependencies() else {
+            fatalError("PhotoEditor requires Camera and Storage modules")
+        }
+    }
+}
+```
+
+## Testing Modules
+
+### Unit Testing
+
+```swift CameraModuleTests.swift
+import XCTest
+@testable import NativeBridge
+
+class CameraModuleTests: XCTestCase {
+    
+    var module: CameraModule!
+    var mockBridge: MockNativeBridge!
+    
+    override func setUp() {
+        mockBridge = MockNativeBridge()
+        module = CameraModule()
+        module.setBridge(mockBridge)
+    }
+    
+    func testGetPermissions() {
+        let expectation = XCTestExpectation(description: "Get permissions")
+        
+        module.getPermissions([:]) { result in
+            switch result {
+            case .success(let data):
+                XCTAssertNotNil(data["camera"])
+                expectation.fulfill()
+            case .error(let error):
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+}
+```
+
+### Integration Testing
+
+```javascript camera.test.js
+import { NativeBridge } from '@nativebridge/core';
+
+describe('Camera Module', () => {
+  let bridge;
+  
+  beforeEach(() => {
+    bridge = new NativeBridge({ mock: true });
+    
+    // Mock camera module
+    bridge.mockModule('Camera', {
+      getPermissions: () => Promise.resolve({ camera: 'granted' }),
+      takePicture: () => Promise.resolve({
+        image: 'base64encodedimage',
+        width: 1920,
+        height: 1080
+      })
+    });
+  });
+  
+  test('should take picture with permissions', async () => {
+    const result = await bridge.execute('Camera.takePicture', {
+      quality: 'high'
+    });
+    
+    expect(result.image).toBeDefined();
+    expect(result.width).toBe(1920);
+    expect(result.height).toBe(1080);
+  });
+});
+```
+
+## Module Best Practices
+
+<AccordionGroup>
+  <Accordion icon="rocket" title="Performance">
+    - Keep methods lightweight and fast
+    - Use background threads for heavy operations
+    - Implement proper cancellation for long-running tasks
+    - Cache expensive computations
+    - Avoid blocking the main thread
+  </Accordion>
+  
+  <Accordion icon="shield" title="Security">
+    - Validate all input parameters
+    - Sanitize data before native operations
+    - Implement proper permission checks
+    - Never expose sensitive native APIs directly
+    - Use secure storage for sensitive data
+  </Accordion>
+  
+  <Accordion icon="bug" title="Error Handling">
+    - Provide descriptive error messages
+    - Use appropriate error codes
+    - Include native stack traces when helpful
+    - Implement graceful degradation
+    - Log errors for debugging
+  </Accordion>
+  
+  <Accordion icon="users" title="API Design">
+    - Keep interfaces simple and consistent
+    - Use TypeScript for type safety
+    - Document all methods and events
+    - Version your module APIs
+    - Maintain backward compatibility
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Communication Protocol"
+    icon="exchange"
+    href="/concepts/communication-protocol"
+  >
+    Understand the underlying message protocol
+  </Card>
+  <Card
+    title="Data Serialization"
+    icon="database"
+    href="/concepts/data-serialization"
+  >
+    Learn how data is passed between layers
+  </Card>
+</CardGroup>

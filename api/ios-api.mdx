@@ -1,0 +1,825 @@
+---
+title: "iOS API"
+description: "Complete reference for NativeBridge iOS SDK in Swift"
+---
+
+## Installation
+
+### CocoaPods
+
+```ruby Podfile
+pod 'NativeBridge', '~> 1.0'
+```
+
+### Swift Package Manager
+
+```swift Package.swift
+.package(url: "https://github.com/nativebridge/nativebridge-ios", from: "1.0.0")
+```
+
+### Manual Installation
+
+1. Download the latest release from GitHub
+2. Drag `NativeBridge.framework` into your Xcode project
+3. Add to "Frameworks, Libraries, and Embedded Content"
+
+## Core Classes
+
+### NativeBridge
+
+The main bridge class that manages communication between iOS and JavaScript.
+
+```swift
+import NativeBridge
+
+// Access the shared instance
+let bridge = NativeBridge.shared
+```
+
+#### Initialization
+
+```swift
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        
+        // Initialize NativeBridge
+        let config = NativeBridgeConfig()
+        config.debugMode = true
+        config.logLevel = .verbose
+        config.messageTimeout = 10.0
+        
+        NativeBridge.shared.initialize(config: config)
+        
+        return true
+    }
+}
+```
+
+#### Configuration Options
+
+```swift
+class NativeBridgeConfig {
+    var debugMode: Bool = false
+    var logLevel: LogLevel = .warning
+    var messageTimeout: TimeInterval = 5.0
+    var retryAttempts: Int = 3
+    var retryDelay: TimeInterval = 1.0
+    var enableBatching: Bool = true
+    var maxBatchSize: Int = 10
+    var batchTimeout: TimeInterval = 0.05
+    var allowedOrigins: [String] = []
+    var enableEncryption: Bool = false
+}
+
+enum LogLevel {
+    case none, error, warning, info, debug, verbose
+}
+```
+
+## Module Creation
+
+### NativeBridgeModule
+
+Base class for creating native modules.
+
+```swift
+import Foundation
+import NativeBridge
+
+class DeviceModule: NativeBridgeModule {
+    
+    // MARK: - Module Configuration
+    
+    override func getName() -> String {
+        return "Device"
+    }
+    
+    override func configure() {
+        // Module-specific configuration
+        self.timeout = 5.0
+        self.requiresMainThread = false
+        self.cacheable = true
+        self.priority = .normal
+    }
+    
+    override func initialize() {
+        // Called when bridge is ready
+        print("Device module initialized")
+    }
+    
+    override func teardown() {
+        // Called during cleanup
+        print("Device module torn down")
+    }
+    
+    // MARK: - Bridge Methods
+    
+    @BridgeMethod
+    func getDeviceInfo(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let info: [String: Any] = [
+            "model": UIDevice.current.model,
+            "systemName": UIDevice.current.systemName,
+            "systemVersion": UIDevice.current.systemVersion,
+            "identifier": UIDevice.current.identifierForVendor?.uuidString ?? "",
+            "name": UIDevice.current.name
+        ]
+        
+        callback(.success(info))
+    }
+    
+    @BridgeMethod
+    func vibrate(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let duration = params["duration"] as? TimeInterval ?? 0.5
+        
+        // Trigger haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
+        
+        // For longer vibrations
+        if duration > 0.1 {
+            AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+        }
+        
+        callback(.success(nil))
+    }
+    
+    @BridgeMethod
+    func getBatteryLevel(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        
+        let batteryLevel = UIDevice.current.batteryLevel
+        let batteryState = UIDevice.current.batteryState
+        
+        let info: [String: Any] = [
+            "level": Int(batteryLevel * 100),
+            "isCharging": batteryState == .charging || batteryState == .full
+        ]
+        
+        callback(.success(info))
+    }
+}
+```
+
+### Method Annotation
+
+The `@BridgeMethod` attribute marks methods that can be called from JavaScript.
+
+```swift
+@BridgeMethod
+func methodName(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    // Method implementation
+}
+```
+
+#### Method Signature Requirements
+
+- First parameter must be `[String: Any]` for the parameters dictionary
+- Second parameter must be `@escaping BridgeCallback` for the result callback
+- Method must be marked with `@BridgeMethod` attribute
+
+### Callback Types
+
+```swift
+typealias BridgeCallback = (BridgeResult) -> Void
+
+enum BridgeResult {
+    case success(Any?)
+    case error(BridgeError)
+}
+
+struct BridgeError: Error {
+    let code: String
+    let message: String
+    let domain: String?
+    let userInfo: [String: Any]?
+    
+    init(code: String, message: String, domain: String? = nil, userInfo: [String: Any]? = nil) {
+        self.code = code
+        self.message = message
+        self.domain = domain
+        self.userInfo = userInfo
+    }
+}
+```
+
+#### Callback Examples
+
+```swift
+@BridgeMethod
+func exampleMethod(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    // Success with data
+    callback(.success(["result": "success", "data": someData]))
+    
+    // Success with no data
+    callback(.success(nil))
+    
+    // Error
+    callback(.error(BridgeError(
+        code: "INVALID_PARAMS",
+        message: "Required parameter 'id' is missing",
+        domain: "Device"
+    )))
+}
+```
+
+## Advanced Module Features
+
+### Async/Await Support
+
+```swift
+@BridgeMethod
+func asyncMethod(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    Task {
+        do {
+            let result = await performAsyncOperation()
+            await MainActor.run {
+                callback(.success(result))
+            }
+        } catch {
+            await MainActor.run {
+                callback(.error(BridgeError(
+                    code: "ASYNC_ERROR",
+                    message: error.localizedDescription
+                )))
+            }
+        }
+    }
+}
+
+private func performAsyncOperation() async -> [String: Any] {
+    // Async operation
+    try? await Task.sleep(nanoseconds: 1_000_000_000)
+    return ["completed": true]
+}
+```
+
+### Background Thread Support
+
+```swift
+@BridgeMethod
+func heavyComputation(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    DispatchQueue.global(qos: .userInitiated).async {
+        // Perform heavy computation
+        let result = self.performHeavyTask()
+        
+        DispatchQueue.main.async {
+            callback(.success(result))
+        }
+    }
+}
+```
+
+### Parameter Validation
+
+```swift
+@BridgeMethod
+func validateParams(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    // Validate required parameters
+    guard let userId = params["userId"] as? String,
+          !userId.isEmpty else {
+        callback(.error(BridgeError(
+            code: "INVALID_PARAMS",
+            message: "userId is required and must be a non-empty string"
+        )))
+        return
+    }
+    
+    // Validate optional parameters with defaults
+    let includeDetails = params["includeDetails"] as? Bool ?? false
+    let maxItems = params["maxItems"] as? Int ?? 10
+    
+    // Validate ranges
+    guard maxItems > 0 && maxItems <= 100 else {
+        callback(.error(BridgeError(
+            code: "INVALID_PARAMS",
+            message: "maxItems must be between 1 and 100"
+        )))
+        return
+    }
+    
+    // Proceed with validated parameters
+    let result = processUser(userId: userId, includeDetails: includeDetails, maxItems: maxItems)
+    callback(.success(result))
+}
+```
+
+## Event Emission
+
+### Emitting Events to JavaScript
+
+```swift
+class NotificationModule: NativeBridgeModule {
+    
+    override func getName() -> String {
+        return "Notification"
+    }
+    
+    override func initialize() {
+        // Set up notification observers
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(batteryLevelChanged),
+            name: UIDevice.batteryLevelDidChangeNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func batteryLevelChanged() {
+        let level = UIDevice.current.batteryLevel
+        let isCharging = UIDevice.current.batteryState == .charging
+        
+        // Emit event to JavaScript
+        self.emit("batteryLevelChanged", data: [
+            "level": Int(level * 100),
+            "isCharging": isCharging,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+    }
+    
+    @BridgeMethod
+    func startBatteryMonitoring(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        callback(.success(["monitoring": true]))
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+}
+```
+
+### Global Event Emission
+
+```swift
+// Emit events from anywhere in your app
+NativeBridge.shared.emit("app.backgrounded", data: [
+    "timestamp": Date().timeIntervalSince1970
+])
+
+NativeBridge.shared.emit("user.authenticated", data: [
+    "userId": user.id,
+    "email": user.email
+])
+```
+
+## Module Registration
+
+### Registration Methods
+
+```swift
+class AppDelegate: UIApplicationDelegate {
+    func application(_ application: UIApplication,
+                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        
+        // Initialize bridge
+        NativeBridge.shared.initialize()
+        
+        // Register modules
+        registerModules()
+        
+        return true
+    }
+    
+    private func registerModules() {
+        let bridge = NativeBridge.shared
+        
+        // Register individual modules
+        bridge.registerModule(DeviceModule())
+        bridge.registerModule(StorageModule())
+        bridge.registerModule(CameraModule())
+        bridge.registerModule(NotificationModule())
+        
+        // Register modules in batch
+        bridge.registerModules([
+            AnalyticsModule(),
+            AuthModule(),
+            LocationModule()
+        ])
+    }
+}
+```
+
+### Conditional Registration
+
+```swift
+private func registerModules() {
+    let bridge = NativeBridge.shared
+    
+    // Always available modules
+    bridge.registerModule(DeviceModule())
+    bridge.registerModule(StorageModule())
+    
+    // iOS version-specific modules
+    if #available(iOS 14.0, *) {
+        bridge.registerModule(iOS14FeaturesModule())
+    }
+    
+    // Feature-specific modules
+    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+        bridge.registerModule(CameraModule())
+    }
+    
+    // Development-only modules
+    #if DEBUG
+    bridge.registerModule(DebugModule())
+    #endif
+}
+```
+
+## WebView Integration
+
+### WKWebView Setup
+
+```swift
+import WebKit
+import NativeBridge
+
+class WebViewController: UIViewController {
+    @IBOutlet weak var webView: WKWebView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupWebView()
+    }
+    
+    private func setupWebView() {
+        // Attach NativeBridge to WebView
+        NativeBridge.shared.attach(to: webView)
+        
+        // Load your web content
+        if let url = URL(string: "https://yourapp.com") {
+            webView.load(URLRequest(url: url))
+        }
+    }
+}
+```
+
+### Custom WebView Configuration
+
+```swift
+class CustomWebViewController: UIViewController {
+    private var webView: WKWebView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        createWebView()
+    }
+    
+    private func createWebView() {
+        // Create configuration
+        let configuration = WKWebViewConfiguration()
+        
+        // Configure user content controller
+        let userContentController = WKUserContentController()
+        configuration.userContentController = userContentController
+        
+        // Create web view
+        webView = WKWebView(frame: view.bounds, configuration: configuration)
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(webView)
+        
+        // Attach bridge with custom configuration
+        let bridgeConfig = WebViewBridgeConfig()
+        bridgeConfig.messageHandlerName = "customBridge"
+        bridgeConfig.injectBridgeScript = true
+        bridgeConfig.enableLogging = true
+        
+        NativeBridge.shared.attach(to: webView, config: bridgeConfig)
+    }
+}
+```
+
+## Error Handling
+
+### Custom Error Types
+
+```swift
+enum DeviceError: String, CaseIterable {
+    case permissionDenied = "PERMISSION_DENIED"
+    case featureUnavailable = "FEATURE_UNAVAILABLE"
+    case invalidConfiguration = "INVALID_CONFIGURATION"
+    case operationCancelled = "OPERATION_CANCELLED"
+    
+    func toBridgeError(message: String? = nil) -> BridgeError {
+        return BridgeError(
+            code: self.rawValue,
+            message: message ?? self.defaultMessage,
+            domain: "Device"
+        )
+    }
+    
+    var defaultMessage: String {
+        switch self {
+        case .permissionDenied:
+            return "Required permission was denied"
+        case .featureUnavailable:
+            return "Feature is not available on this device"
+        case .invalidConfiguration:
+            return "Invalid configuration provided"
+        case .operationCancelled:
+            return "Operation was cancelled by user"
+        }
+    }
+}
+```
+
+### Error Handling in Methods
+
+```swift
+@BridgeMethod
+func requestLocationPermission(_ params: [String: Any], callback: @escaping BridgeCallback) {
+    let locationManager = CLLocationManager()
+    
+    switch locationManager.authorizationStatus {
+    case .notDetermined:
+        locationManager.requestWhenInUseAuthorization()
+        callback(.success(["status": "requested"]))
+        
+    case .denied, .restricted:
+        callback(.error(DeviceError.permissionDenied.toBridgeError(
+            message: "Location permission is required for this feature"
+        )))
+        
+    case .authorizedWhenInUse, .authorizedAlways:
+        callback(.success(["status": "granted"]))
+        
+    @unknown default:
+        callback(.error(DeviceError.featureUnavailable.toBridgeError()))
+    }
+}
+```
+
+### Global Error Handling
+
+```swift
+class ErrorHandler: NativeBridgeErrorHandler {
+    func handleBridgeError(_ error: BridgeError, context: BridgeContext) {
+        // Log error
+        print("Bridge Error [\(error.code)]: \(error.message)")
+        
+        // Send to analytics
+        Analytics.track("bridge_error", properties: [
+            "code": error.code,
+            "message": error.message,
+            "module": context.moduleName,
+            "method": context.methodName
+        ])
+        
+        // Show user notification for critical errors
+        if error.code == "PERMISSION_DENIED" {
+            DispatchQueue.main.async {
+                self.showPermissionAlert()
+            }
+        }
+    }
+    
+    private func showPermissionAlert() {
+        let alert = UIAlertController(
+            title: "Permission Required",
+            message: "This feature requires additional permissions. Please enable them in Settings.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Settings", style: .default) { _ in
+            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(settingsUrl)
+            }
+        })
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        
+        UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true)
+    }
+}
+
+// Register error handler
+NativeBridge.shared.setErrorHandler(ErrorHandler())
+```
+
+## Debugging and Logging
+
+### Debug Configuration
+
+```swift
+#if DEBUG
+let config = NativeBridgeConfig()
+config.debugMode = true
+config.logLevel = .verbose
+config.enableMessageLogging = true
+config.logMessagePayloads = true
+NativeBridge.shared.initialize(config: config)
+#else
+let config = NativeBridgeConfig()
+config.debugMode = false
+config.logLevel = .error
+NativeBridge.shared.initialize(config: config)
+#endif
+```
+
+### Custom Logging
+
+```swift
+class CustomLogger: NativeBridgeLogger {
+    func log(level: LogLevel, message: String, category: String, file: String, function: String, line: Int) {
+        let timestamp = DateFormatter.iso8601.string(from: Date())
+        let logMessage = "[\(timestamp)] [\(level)] [\(category)] \(message)"
+        
+        // Log to console
+        print(logMessage)
+        
+        // Log to file
+        writeToLogFile(logMessage)
+        
+        // Send to remote logging service
+        if level == .error {
+            sendToRemoteLogger(logMessage)
+        }
+    }
+    
+    private func writeToLogFile(_ message: String) {
+        // Implementation for file logging
+    }
+    
+    private func sendToRemoteLogger(_ message: String) {
+        // Implementation for remote logging
+    }
+}
+
+// Set custom logger
+NativeBridge.shared.setLogger(CustomLogger())
+```
+
+## Performance Optimization
+
+### Method Caching
+
+```swift
+class CachedModule: NativeBridgeModule {
+    private let cache = NSCache<NSString, AnyObject>()
+    
+    override func configure() {
+        self.cacheable = true
+        self.cacheTimeout = 60.0 // 1 minute
+    }
+    
+    @BridgeMethod
+    func getExpensiveData(_ params: [String: Any], callback: @escaping BridgeCallback) {
+        let cacheKey = "expensive_data"
+        
+        // Check cache first
+        if let cachedData = cache.object(forKey: cacheKey as NSString) {
+            callback(.success(cachedData))
+            return
+        }
+        
+        // Expensive operation
+        DispatchQueue.global().async {
+            let data = self.performExpensiveOperation()
+            
+            // Cache result
+            self.cache.setObject(data as AnyObject, forKey: cacheKey as NSString)
+            
+            DispatchQueue.main.async {
+                callback(.success(data))
+            }
+        }
+    }
+}
+```
+
+### Memory Management
+
+```swift
+class MemoryAwareModule: NativeBridgeModule {
+    private var observers: [NSObjectProtocol] = []
+    
+    override func initialize() {
+        // Monitor memory warnings
+        let observer = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleMemoryWarning()
+        }
+        observers.append(observer)
+    }
+    
+    private func handleMemoryWarning() {
+        // Clear caches
+        cache.removeAllObjects()
+        
+        // Release unnecessary resources
+        releaseResources()
+        
+        // Emit memory warning event
+        emit("memoryWarning", data: ["timestamp": Date().timeIntervalSince1970])
+    }
+    
+    override func teardown() {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers.removeAll()
+    }
+}
+```
+
+## Testing
+
+### Unit Testing Modules
+
+```swift
+import XCTest
+@testable import YourApp
+@testable import NativeBridge
+
+class DeviceModuleTests: XCTestCase {
+    var module: DeviceModule!
+    var mockBridge: MockNativeBridge!
+    
+    override func setUp() {
+        super.setUp()
+        module = DeviceModule()
+        mockBridge = MockNativeBridge()
+        module.setBridge(mockBridge)
+    }
+    
+    func testGetDeviceInfo() {
+        let expectation = XCTestExpectation(description: "Get device info")
+        
+        module.getDeviceInfo([:]) { result in
+            switch result {
+            case .success(let data):
+                guard let deviceInfo = data as? [String: Any] else {
+                    XCTFail("Invalid response format")
+                    return
+                }
+                
+                XCTAssertNotNil(deviceInfo["model"])
+                XCTAssertNotNil(deviceInfo["systemName"])
+                XCTAssertNotNil(deviceInfo["systemVersion"])
+                expectation.fulfill()
+                
+            case .error(let error):
+                XCTFail("Unexpected error: \(error.message)")
+            }
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+    func testVibrate() {
+        let expectation = XCTestExpectation(description: "Vibrate device")
+        
+        module.vibrate(["duration": 0.3]) { result in
+            switch result {
+            case .success:
+                expectation.fulfill()
+            case .error(let error):
+                XCTFail("Unexpected error: \(error.message)")
+            }
+        }
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+}
+```
+
+### Mock Bridge for Testing
+
+```swift
+class MockNativeBridge: NativeBridgeProtocol {
+    private var emittedEvents: [(String, Any?)] = []
+    
+    func emit(_ event: String, data: Any?) {
+        emittedEvents.append((event, data))
+    }
+    
+    func getEmittedEvents() -> [(String, Any?)] {
+        return emittedEvents
+    }
+    
+    func clearEmittedEvents() {
+        emittedEvents.removeAll()
+    }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Android API"
+    icon="android"
+    href="/api/android-api"
+  >
+    Explore Android bridge development
+  </Card>
+  <Card
+    title="iOS Integration Guide"
+    icon="book"
+    href="/guides/ios-integration"
+  >
+    Step-by-step iOS integration guide
+  </Card>
+</CardGroup>

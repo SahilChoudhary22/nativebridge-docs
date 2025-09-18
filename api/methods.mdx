@@ -1,0 +1,879 @@
+---
+title: "Methods Reference"
+description: "Complete reference of all NativeBridge methods and their signatures"
+---
+
+## Core Bridge Methods
+
+These methods are available on the main NativeBridge instance for managing communication and configuration.
+
+### execute()
+
+Execute a native method and return a promise with the result.
+
+```typescript
+execute<T = any>(
+  method: string,
+  params?: any,
+  options?: CallOptions
+): Promise<T>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `method` | `string` | Yes | Module and method name in format "Module.method" |
+| `params` | `any` | No | Parameters to pass to the native method |
+| `options` | `CallOptions` | No | Call-specific configuration options |
+
+#### Returns
+
+`Promise<T>` - Promise that resolves with the method result or rejects with a BridgeError.
+
+#### Examples
+
+```javascript
+// Basic method call
+const result = await bridge.execute('Device.getInfo');
+
+// With parameters
+const photo = await bridge.execute('Camera.takePicture', {
+  quality: 'high',
+  format: 'jpeg'
+});
+
+// With options
+const data = await bridge.execute('API.longOperation', params, {
+  timeout: 30000,
+  priority: 'high'
+});
+```
+
+### on()
+
+Register an event listener for events emitted from native code.
+
+```typescript
+on<T = any>(
+  event: string,
+  listener: (data: T) => void
+): () => void
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `string` | Yes | Event name to listen for |
+| `listener` | `function` | Yes | Callback function to handle the event |
+
+#### Returns
+
+`function` - Unsubscribe function to remove the event listener.
+
+#### Examples
+
+```javascript
+// Listen for device events
+const unsubscribe = bridge.on('battery.levelChanged', (data) => {
+  console.log('Battery level:', data.level);
+});
+
+// Unsubscribe when done
+unsubscribe();
+```
+
+### emit()
+
+Emit an event to native code.
+
+```typescript
+emit(event: string, data?: any): void
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `string` | Yes | Event name to emit |
+| `data` | `any` | No | Data to send with the event |
+
+#### Examples
+
+```javascript
+// Emit user action
+bridge.emit('user.action', {
+  type: 'button_click',
+  target: 'purchase'
+});
+```
+
+### registerModule()
+
+Register a JavaScript module that can be called from native code.
+
+```typescript
+registerModule(
+  name: string,
+  module: ModuleDefinition
+): void
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | `string` | Yes | Unique module name |
+| `module` | `ModuleDefinition` | Yes | Object containing module methods |
+
+#### Examples
+
+```javascript
+bridge.registerModule('Analytics', {
+  track: (event, properties) => {
+    // Implementation
+  }
+});
+```
+
+### configure()
+
+Update bridge configuration at runtime.
+
+```typescript
+configure(options: Partial<BridgeOptions>): void
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `options` | `Partial<BridgeOptions>` | Yes | Configuration options to update |
+
+#### Examples
+
+```javascript
+bridge.configure({
+  debug: true,
+  timeout: 15000
+});
+```
+
+### isReady()
+
+Check if the bridge is ready for communication.
+
+```typescript
+isReady(): Promise<boolean>
+```
+
+#### Returns
+
+`Promise<boolean>` - Promise that resolves to true if bridge is ready.
+
+#### Examples
+
+```javascript
+if (await bridge.isReady()) {
+  // Bridge is ready
+}
+```
+
+## Device Module Methods
+
+Standard device information and control methods.
+
+### Device.getInfo()
+
+Get comprehensive device information.
+
+```typescript
+DeviceModule.getInfo(): Promise<DeviceInfo>
+```
+
+#### Returns
+
+```typescript
+interface DeviceInfo {
+  model: string;           // Device model (e.g., "iPhone 14", "Pixel 6")
+  manufacturer: string;    // Device manufacturer
+  systemName: string;      // OS name ("iOS", "Android")
+  systemVersion: string;   // OS version (e.g., "16.0", "13")
+  identifier: string;      // Unique device identifier
+  name: string;           // Device name set by user
+  brand?: string;         // Device brand (Android only)
+}
+```
+
+#### Examples
+
+```javascript
+const info = await bridge.execute('Device.getInfo');
+console.log(`${info.manufacturer} ${info.model} running ${info.systemName} ${info.systemVersion}`);
+```
+
+### Device.vibrate()
+
+Trigger device vibration.
+
+```typescript
+DeviceModule.vibrate(options?: VibrateOptions): Promise<void>
+```
+
+#### Parameters
+
+```typescript
+interface VibrateOptions {
+  duration?: number;       // Vibration duration in milliseconds (default: 500)
+  intensity?: 'light' | 'medium' | 'heavy'; // Vibration intensity (iOS only)
+}
+```
+
+#### Examples
+
+```javascript
+// Default vibration
+await bridge.execute('Device.vibrate');
+
+// Custom duration
+await bridge.execute('Device.vibrate', { duration: 1000 });
+
+// With intensity (iOS)
+await bridge.execute('Device.vibrate', { 
+  duration: 300, 
+  intensity: 'heavy' 
+});
+```
+
+### Device.getBatteryLevel()
+
+Get current battery level and charging status.
+
+```typescript
+DeviceModule.getBatteryLevel(): Promise<BatteryInfo>
+```
+
+#### Returns
+
+```typescript
+interface BatteryInfo {
+  level: number;          // Battery level percentage (0-100)
+  isCharging: boolean;    // Whether device is currently charging
+}
+```
+
+#### Examples
+
+```javascript
+const battery = await bridge.execute('Device.getBatteryLevel');
+if (battery.level < 20 && !battery.isCharging) {
+  showLowBatteryWarning();
+}
+```
+
+## Camera Module Methods
+
+Camera access and photo capture functionality.
+
+### Camera.takePicture()
+
+Capture a photo using the device camera.
+
+```typescript
+CameraModule.takePicture(options: CameraOptions): Promise<Photo>
+```
+
+#### Parameters
+
+```typescript
+interface CameraOptions {
+  quality: 'low' | 'medium' | 'high';     // Image quality
+  format?: 'jpeg' | 'png';                // Image format (default: 'jpeg')
+  camera?: 'front' | 'back';              // Camera to use (default: 'back')
+  maxWidth?: number;                      // Maximum image width
+  maxHeight?: number;                     // Maximum image height
+  allowEdit?: boolean;                    // Allow user to edit photo
+}
+```
+
+#### Returns
+
+```typescript
+interface Photo {
+  image: string;          // Base64 encoded image data
+  width: number;          // Image width in pixels
+  height: number;         // Image height in pixels
+  size: number;           // File size in bytes
+  format: string;         // Image format
+  timestamp: number;      // Capture timestamp
+}
+```
+
+#### Examples
+
+```javascript
+// Basic photo capture
+const photo = await bridge.execute('Camera.takePicture', {
+  quality: 'high'
+});
+
+// Front camera with editing
+const selfie = await bridge.execute('Camera.takePicture', {
+  quality: 'medium',
+  camera: 'front',
+  allowEdit: true
+});
+```
+
+### Camera.getPermissions()
+
+Check camera permission status.
+
+```typescript
+CameraModule.getPermissions(): Promise<PermissionStatus>
+```
+
+#### Returns
+
+```typescript
+interface PermissionStatus {
+  camera: 'granted' | 'denied' | 'prompt';
+}
+```
+
+#### Examples
+
+```javascript
+const permissions = await bridge.execute('Camera.getPermissions');
+if (permissions.camera === 'denied') {
+  showPermissionDeniedMessage();
+}
+```
+
+### Camera.requestPermissions()
+
+Request camera permissions from the user.
+
+```typescript
+CameraModule.requestPermissions(): Promise<PermissionResult>
+```
+
+#### Returns
+
+```typescript
+interface PermissionResult {
+  granted: boolean;
+}
+```
+
+#### Examples
+
+```javascript
+const result = await bridge.execute('Camera.requestPermissions');
+if (result.granted) {
+  // Proceed with camera operations
+}
+```
+
+## Storage Module Methods
+
+Local storage and data persistence.
+
+### Storage.get()
+
+Retrieve a value from local storage.
+
+```typescript
+StorageModule.get<T = any>(key: string): Promise<T | null>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | `string` | Yes | Storage key to retrieve |
+
+#### Returns
+
+`Promise<T | null>` - The stored value or null if not found.
+
+#### Examples
+
+```javascript
+// Get user preferences
+const preferences = await bridge.execute('Storage.get', { key: 'user_preferences' });
+
+// Get with type safety
+const userId: string = await bridge.execute('Storage.get', { key: 'user_id' });
+```
+
+### Storage.set()
+
+Store a value in local storage.
+
+```typescript
+StorageModule.set<T = any>(key: string, value: T): Promise<void>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | `string` | Yes | Storage key |
+| `value` | `T` | Yes | Value to store |
+
+#### Examples
+
+```javascript
+// Store user preferences
+await bridge.execute('Storage.set', {
+  key: 'user_preferences',
+  value: { theme: 'dark', notifications: true }
+});
+
+// Store simple value
+await bridge.execute('Storage.set', {
+  key: 'last_login',
+  value: Date.now()
+});
+```
+
+### Storage.remove()
+
+Remove a value from local storage.
+
+```typescript
+StorageModule.remove(key: string): Promise<void>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `key` | `string` | Yes | Storage key to remove |
+
+#### Examples
+
+```javascript
+// Remove user session
+await bridge.execute('Storage.remove', { key: 'user_session' });
+```
+
+### Storage.clear()
+
+Clear all stored data.
+
+```typescript
+StorageModule.clear(): Promise<void>
+```
+
+#### Examples
+
+```javascript
+// Clear all data (e.g., on logout)
+await bridge.execute('Storage.clear');
+```
+
+### Storage.getAllKeys()
+
+Get all storage keys.
+
+```typescript
+StorageModule.getAllKeys(): Promise<string[]>
+```
+
+#### Returns
+
+`Promise<string[]>` - Array of all storage keys.
+
+#### Examples
+
+```javascript
+const keys = await bridge.execute('Storage.getAllKeys');
+console.log('Stored keys:', keys);
+```
+
+## Network Module Methods
+
+Network connectivity and HTTP requests.
+
+### Network.getConnectionInfo()
+
+Get current network connection information.
+
+```typescript
+NetworkModule.getConnectionInfo(): Promise<ConnectionInfo>
+```
+
+#### Returns
+
+```typescript
+interface ConnectionInfo {
+  isConnected: boolean;
+  connectionType: 'wifi' | 'cellular' | 'ethernet' | 'none';
+  isMetered: boolean;     // Whether connection is metered (affects data usage)
+  strength?: number;      // Signal strength (0-100, if available)
+}
+```
+
+#### Examples
+
+```javascript
+const connection = await bridge.execute('Network.getConnectionInfo');
+if (!connection.isConnected) {
+  showOfflineMessage();
+} else if (connection.isMetered) {
+  askUserBeforeDownloading();
+}
+```
+
+### Network.request()
+
+Make an HTTP request using native networking.
+
+```typescript
+NetworkModule.request(options: RequestOptions): Promise<Response>
+```
+
+#### Parameters
+
+```typescript
+interface RequestOptions {
+  url: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  followRedirects?: boolean;
+  validateSSL?: boolean;
+}
+```
+
+#### Returns
+
+```typescript
+interface Response {
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  data: any;
+}
+```
+
+#### Examples
+
+```javascript
+// GET request
+const response = await bridge.execute('Network.request', {
+  url: 'https://api.example.com/users',
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer ' + token
+  }
+});
+
+// POST request
+const createResponse = await bridge.execute('Network.request', {
+  url: 'https://api.example.com/users',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: {
+    name: 'John Doe',
+    email: 'john@example.com'
+  }
+});
+```
+
+## Location Module Methods
+
+GPS and location services.
+
+### Location.getCurrentPosition()
+
+Get the current device location.
+
+```typescript
+LocationModule.getCurrentPosition(options?: LocationOptions): Promise<Position>
+```
+
+#### Parameters
+
+```typescript
+interface LocationOptions {
+  accuracy: 'low' | 'balanced' | 'high';
+  timeout?: number;       // Timeout in milliseconds
+  maxAge?: number;        // Maximum age of cached location
+}
+```
+
+#### Returns
+
+```typescript
+interface Position {
+  latitude: number;
+  longitude: number;
+  accuracy: number;       // Accuracy in meters
+  altitude?: number;      // Altitude in meters
+  heading?: number;       // Heading in degrees
+  speed?: number;         // Speed in m/s
+  timestamp: number;      // Timestamp when location was obtained
+}
+```
+
+#### Examples
+
+```javascript
+// Get current location
+const position = await bridge.execute('Location.getCurrentPosition', {
+  accuracy: 'high',
+  timeout: 10000
+});
+
+console.log(`Location: ${position.latitude}, ${position.longitude}`);
+```
+
+### Location.getPermissions()
+
+Check location permission status.
+
+```typescript
+LocationModule.getPermissions(): Promise<LocationPermissions>
+```
+
+#### Returns
+
+```typescript
+interface LocationPermissions {
+  location: 'granted' | 'denied' | 'prompt';
+  precise: boolean;       // Whether precise location is granted (iOS 14+)
+}
+```
+
+#### Examples
+
+```javascript
+const permissions = await bridge.execute('Location.getPermissions');
+if (permissions.location === 'denied') {
+  showLocationPermissionDialog();
+}
+```
+
+## Biometric Module Methods
+
+Biometric authentication (fingerprint, face, etc.).
+
+### Biometric.isAvailable()
+
+Check if biometric authentication is available.
+
+```typescript
+BiometricModule.isAvailable(): Promise<BiometricAvailability>
+```
+
+#### Returns
+
+```typescript
+interface BiometricAvailability {
+  available: boolean;
+  types: ('fingerprint' | 'face' | 'iris' | 'voice')[];
+  enrolled: boolean;      // Whether user has enrolled biometrics
+}
+```
+
+#### Examples
+
+```javascript
+const biometric = await bridge.execute('Biometric.isAvailable');
+if (biometric.available && biometric.enrolled) {
+  // Show biometric login option
+}
+```
+
+### Biometric.authenticate()
+
+Authenticate user using biometrics.
+
+```typescript
+BiometricModule.authenticate(options?: AuthenticationOptions): Promise<AuthenticationResult>
+```
+
+#### Parameters
+
+```typescript
+interface AuthenticationOptions {
+  title?: string;         // Dialog title
+  subtitle?: string;      // Dialog subtitle
+  description?: string;   // Dialog description
+  fallbackTitle?: string; // Fallback button title
+  negativeTitle?: string; // Cancel button title
+}
+```
+
+#### Returns
+
+```typescript
+interface AuthenticationResult {
+  success: boolean;
+  error?: string;         // Error message if authentication failed
+  biometricType?: string; // Type of biometric used
+}
+```
+
+#### Examples
+
+```javascript
+const result = await bridge.execute('Biometric.authenticate', {
+  title: 'Authenticate',
+  subtitle: 'Use your biometric to login',
+  description: 'Place your finger on the sensor or look at the camera'
+});
+
+if (result.success) {
+  // User authenticated successfully
+  proceedWithLogin();
+} else {
+  // Authentication failed
+  console.error('Authentication failed:', result.error);
+}
+```
+
+## Analytics Module Methods
+
+Event tracking and analytics.
+
+### Analytics.track()
+
+Track an analytics event.
+
+```typescript
+AnalyticsModule.track(event: string, properties?: Record<string, any>): Promise<void>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `event` | `string` | Yes | Event name |
+| `properties` | `Record<string, any>` | No | Event properties |
+
+#### Examples
+
+```javascript
+// Track simple event
+await bridge.execute('Analytics.track', {
+  event: 'button_clicked'
+});
+
+// Track event with properties
+await bridge.execute('Analytics.track', {
+  event: 'purchase_completed',
+  properties: {
+    amount: 99.99,
+    currency: 'USD',
+    product_id: 'abc123'
+  }
+});
+```
+
+### Analytics.identify()
+
+Identify the current user.
+
+```typescript
+AnalyticsModule.identify(userId: string, traits?: Record<string, any>): Promise<void>
+```
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `userId` | `string` | Yes | Unique user identifier |
+| `traits` | `Record<string, any>` | No | User traits/properties |
+
+#### Examples
+
+```javascript
+// Identify user
+await bridge.execute('Analytics.identify', {
+  userId: 'user123',
+  traits: {
+    email: 'user@example.com',
+    plan: 'premium',
+    signup_date: '2024-01-15'
+  }
+});
+```
+
+## Error Codes
+
+Common error codes returned by bridge methods:
+
+| Code | Description |
+|------|-------------|
+| `MODULE_NOT_FOUND` | The specified module is not registered |
+| `METHOD_NOT_FOUND` | The specified method does not exist |
+| `INVALID_PARAMS` | Invalid or missing parameters |
+| `PERMISSION_DENIED` | Required permission not granted |
+| `FEATURE_UNAVAILABLE` | Feature not available on this platform |
+| `TIMEOUT` | Method call timed out |
+| `NETWORK_ERROR` | Network operation failed |
+| `NATIVE_ERROR` | Error occurred in native code |
+| `SERIALIZATION_ERROR` | Failed to serialize/deserialize data |
+| `BRIDGE_NOT_READY` | Bridge is not initialized |
+| `OPERATION_CANCELLED` | Operation was cancelled by user |
+
+## Method Conventions
+
+### Parameter Validation
+
+All methods should validate their parameters and return appropriate error codes:
+
+```javascript
+// Example parameter validation
+if (!params.key || typeof params.key !== 'string') {
+  throw new BridgeError('INVALID_PARAMS', 'key must be a non-empty string');
+}
+```
+
+### Async Operations
+
+Long-running operations should:
+- Use appropriate timeouts
+- Support cancellation where possible
+- Provide progress updates via events
+
+### Platform Differences
+
+When methods behave differently across platforms:
+- Document the differences clearly
+- Provide feature detection methods
+- Offer platform-specific alternatives
+
+### Error Handling
+
+Consistent error handling across all methods:
+- Use standard error codes
+- Provide descriptive error messages
+- Include relevant context in error details
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Integration Guides"
+    icon="book"
+    href="/guides/ios-integration"
+  >
+    Platform-specific integration guides
+  </Card>
+  <Card
+    title="Examples"
+    icon="code"
+    href="/examples/hello-world"
+  >
+    Working code examples and tutorials
+  </Card>
+</CardGroup>

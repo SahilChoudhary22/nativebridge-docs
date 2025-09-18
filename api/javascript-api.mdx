@@ -1,0 +1,788 @@
+---
+title: "JavaScript API"
+description: "Complete reference for the NativeBridge JavaScript API"
+---
+
+## Installation
+
+```bash
+npm install @nativebridge/core
+# or
+yarn add @nativebridge/core
+```
+
+## Core API
+
+### NativeBridge Class
+
+The main bridge instance that manages communication with native platforms.
+
+```typescript
+import { NativeBridge } from '@nativebridge/core';
+
+const bridge = new NativeBridge(options?: BridgeOptions);
+```
+
+#### Constructor Options
+
+```typescript
+interface BridgeOptions {
+  // Debug mode - enables verbose logging
+  debug?: boolean;
+  
+  // Default timeout for native calls (milliseconds)
+  timeout?: number;
+  
+  // Automatic retry configuration
+  retry?: {
+    enabled: boolean;
+    maxAttempts: number;
+    delay: number;
+    backoff?: 'linear' | 'exponential';
+  };
+  
+  // Message queue configuration
+  queue?: {
+    maxSize: number;
+    flushInterval: number;
+    prioritize?: boolean;
+  };
+  
+  // Performance optimization
+  performance?: {
+    batching?: {
+      enabled: boolean;
+      maxBatchSize: number;
+      batchTimeout: number;
+    };
+    caching?: {
+      enabled: boolean;
+      ttl: number;
+      maxSize: number;
+    };
+    lazyLoading?: boolean;
+  };
+  
+  // Security settings
+  security?: {
+    validateMessages: boolean;
+    allowedModules?: string[];
+    encryption?: {
+      enabled: boolean;
+      algorithm: string;
+    };
+  };
+  
+  // Mock mode for testing
+  mock?: boolean;
+  mockModules?: Record<string, any>;
+}
+```
+
+#### Example Configuration
+
+```javascript
+const bridge = new NativeBridge({
+  debug: process.env.NODE_ENV === 'development',
+  timeout: 10000,
+  retry: {
+    enabled: true,
+    maxAttempts: 3,
+    delay: 1000,
+    backoff: 'exponential'
+  },
+  performance: {
+    batching: {
+      enabled: true,
+      maxBatchSize: 10,
+      batchTimeout: 50
+    },
+    caching: {
+      enabled: true,
+      ttl: 60000,
+      maxSize: 100
+    }
+  }
+});
+```
+
+## Method Execution
+
+### execute()
+
+Execute a native method and return a promise with the result.
+
+```typescript
+execute<T = any>(
+  method: string,
+  params?: any,
+  options?: CallOptions
+): Promise<T>
+```
+
+#### Parameters
+
+- **method** `string` - Module and method name in format "Module.method"
+- **params** `any` - Parameters to pass to the native method
+- **options** `CallOptions` - Optional call-specific configuration
+
+#### Call Options
+
+```typescript
+interface CallOptions {
+  timeout?: number;        // Override default timeout
+  priority?: 'low' | 'normal' | 'high';
+  retry?: boolean;         // Enable/disable retry for this call
+  cache?: boolean;         // Enable/disable caching for this call
+  metadata?: any;          // Additional metadata to include
+}
+```
+
+#### Examples
+
+```javascript
+// Basic method call
+const deviceInfo = await bridge.execute('Device.getInfo');
+console.log(deviceInfo.model);
+
+// Method call with parameters
+const photo = await bridge.execute('Camera.takePicture', {
+  quality: 'high',
+  format: 'jpeg'
+});
+
+// Method call with options
+const result = await bridge.execute('API.longRunningTask', { data }, {
+  timeout: 30000,
+  priority: 'high'
+});
+
+// Error handling
+try {
+  const result = await bridge.execute('Module.method', params);
+} catch (error) {
+  if (error.code === 'TIMEOUT') {
+    console.error('Method call timed out');
+  } else if (error.code === 'MODULE_NOT_FOUND') {
+    console.error('Native module not registered');
+  }
+}
+```
+
+### executeSync()
+
+<Warning>
+  Synchronous execution blocks the JavaScript thread and should be avoided in most cases.
+</Warning>
+
+Execute a native method synchronously (blocking).
+
+```typescript
+executeSync<T = any>(
+  method: string,
+  params?: any
+): T
+```
+
+```javascript
+// Only use for very fast operations
+const isAvailable = bridge.executeSync('Feature.isAvailable');
+```
+
+### batch()
+
+Execute multiple methods in a single batch for better performance.
+
+```typescript
+batch(): BatchBuilder
+```
+
+```javascript
+const batch = bridge.batch()
+  .execute('Auth.getToken')
+  .execute('User.getProfile', { includePreferences: true })
+  .execute('Analytics.track', { event: 'app_launch' });
+
+const [token, profile, analyticsResult] = await batch.run();
+```
+
+#### BatchBuilder Methods
+
+```typescript
+class BatchBuilder {
+  execute<T>(method: string, params?: any): BatchBuilder;
+  run<T extends any[]>(): Promise<T>;
+  clear(): BatchBuilder;
+}
+```
+
+## Event System
+
+### on()
+
+Listen for events emitted from native code.
+
+```typescript
+on<T = any>(
+  event: string,
+  listener: (data: T) => void
+): () => void
+```
+
+#### Returns
+
+Unsubscribe function to remove the event listener.
+
+#### Examples
+
+```javascript
+// Listen for a specific event
+const unsubscribe = bridge.on('bluetooth.deviceFound', (device) => {
+  console.log('Found device:', device.name);
+});
+
+// Listen for module-specific events
+const unsubscribeCamera = bridge.on('Camera.photoReady', (photo) => {
+  displayPhoto(photo);
+});
+
+// Unsubscribe when no longer needed
+unsubscribe();
+unsubscribeCamera();
+
+// Listen for global bridge events
+bridge.on('bridge.ready', () => {
+  console.log('Bridge is ready for communication');
+});
+
+bridge.on('bridge.error', (error) => {
+  console.error('Bridge error:', error);
+});
+```
+
+### once()
+
+Listen for an event that will only fire once.
+
+```typescript
+once<T = any>(
+  event: string,
+  listener: (data: T) => void
+): () => void
+```
+
+```javascript
+// Wait for a one-time event
+bridge.once('App.initialized', () => {
+  console.log('App initialization complete');
+});
+
+// Promise-based one-time event
+const waitForReady = () => {
+  return new Promise(resolve => {
+    bridge.once('bridge.ready', resolve);
+  });
+};
+
+await waitForReady();
+```
+
+### off()
+
+Remove event listener(s).
+
+```typescript
+off(event: string, listener?: Function): void
+```
+
+```javascript
+const handler = (data) => console.log(data);
+
+// Add listener
+bridge.on('event.name', handler);
+
+// Remove specific listener
+bridge.off('event.name', handler);
+
+// Remove all listeners for an event
+bridge.off('event.name');
+```
+
+### emit()
+
+Emit an event to native code.
+
+```typescript
+emit(event: string, data?: any): void
+```
+
+```javascript
+// Emit simple event
+bridge.emit('user.action', {
+  type: 'button_click',
+  target: 'purchase_button'
+});
+
+// Emit with complex data
+bridge.emit('form.submitted', {
+  formId: 'contact',
+  data: formData,
+  timestamp: Date.now()
+});
+```
+
+## Module Management
+
+### registerModule()
+
+Register a JavaScript module that can be called from native code.
+
+```typescript
+registerModule(
+  name: string,
+  module: ModuleDefinition
+): void
+```
+
+#### Module Definition
+
+```typescript
+interface ModuleDefinition {
+  [methodName: string]: (...args: any[]) => any | Promise<any>;
+}
+```
+
+#### Examples
+
+```javascript
+// Register a simple module
+bridge.registerModule('Analytics', {
+  track: (event, properties) => {
+    console.log('Tracking:', event, properties);
+    // Send to analytics service
+    return { success: true };
+  },
+  
+  identify: async (userId, traits) => {
+    // Async method
+    await analyticsService.identify(userId, traits);
+    return { identified: true };
+  }
+});
+
+// Register module with validation
+bridge.registerModule('Storage', {
+  get: bridge.method({
+    params: { key: 'string' },
+    returns: 'any'
+  }, async (params) => {
+    return localStorage.getItem(params.key);
+  }),
+  
+  set: bridge.method({
+    params: { key: 'string', value: 'any' },
+    returns: 'boolean'
+  }, async (params) => {
+    localStorage.setItem(params.key, JSON.stringify(params.value));
+    return true;
+  })
+});
+```
+
+### getModule()
+
+Get a registered module by name.
+
+```typescript
+getModule(name: string): ModuleDefinition | null
+```
+
+```javascript
+const analyticsModule = bridge.getModule('Analytics');
+if (analyticsModule) {
+  analyticsModule.track('page_view', { page: 'home' });
+}
+```
+
+### unregisterModule()
+
+Remove a registered module.
+
+```typescript
+unregisterModule(name: string): boolean
+```
+
+```javascript
+const removed = bridge.unregisterModule('Analytics');
+console.log('Module removed:', removed);
+```
+
+## State Management
+
+### isReady()
+
+Check if the bridge is ready for communication.
+
+```typescript
+isReady(): Promise<boolean>
+```
+
+```javascript
+const ready = await bridge.isReady();
+if (ready) {
+  console.log('Bridge is ready');
+} else {
+  console.log('Bridge is not ready yet');
+}
+```
+
+### getState()
+
+Get the current bridge state.
+
+```typescript
+getState(): BridgeState
+```
+
+```typescript
+interface BridgeState {
+  ready: boolean;
+  platform: 'ios' | 'android' | 'web';
+  version: string;
+  modules: string[];
+  features: string[];
+  lastActivity: number;
+}
+```
+
+```javascript
+const state = bridge.getState();
+console.log('Platform:', state.platform);
+console.log('Available modules:', state.modules);
+```
+
+### supports()
+
+Check if a feature is supported on the current platform.
+
+```typescript
+supports(feature: string): boolean
+```
+
+```javascript
+if (bridge.supports('biometric')) {
+  // Use biometric authentication
+  const result = await bridge.execute('Auth.biometric');
+} else {
+  // Fallback to password
+  const result = await bridge.execute('Auth.password');
+}
+```
+
+## Configuration
+
+### configure()
+
+Update bridge configuration at runtime.
+
+```typescript
+configure(options: Partial<BridgeOptions>): void
+```
+
+```javascript
+// Enable debug mode
+bridge.configure({
+  debug: true
+});
+
+// Update timeout
+bridge.configure({
+  timeout: 15000
+});
+
+// Configure caching
+bridge.configure({
+  performance: {
+    caching: {
+      enabled: true,
+      ttl: 30000
+    }
+  }
+});
+```
+
+### getConfig()
+
+Get the current bridge configuration.
+
+```typescript
+getConfig(): BridgeOptions
+```
+
+```javascript
+const config = bridge.getConfig();
+console.log('Debug mode:', config.debug);
+console.log('Timeout:', config.timeout);
+```
+
+## Utility Methods
+
+### flush()
+
+Force immediate processing of the message queue.
+
+```typescript
+flush(): void
+```
+
+```javascript
+// Queue some operations
+bridge.execute('Module.method1');
+bridge.execute('Module.method2');
+bridge.execute('Module.method3');
+
+// Force immediate execution
+bridge.flush();
+```
+
+### clearCache()
+
+Clear cached method results.
+
+```typescript
+clearCache(method?: string): void
+```
+
+```javascript
+// Clear specific method cache
+bridge.clearCache('Device.getInfo');
+
+// Clear all cache
+bridge.clearCache();
+```
+
+### destroy()
+
+Clean up the bridge instance and remove all listeners.
+
+```typescript
+destroy(): void
+```
+
+```javascript
+// Clean up before app exit
+bridge.destroy();
+```
+
+## Error Handling
+
+### BridgeError
+
+All bridge errors extend the base `BridgeError` class.
+
+```typescript
+class BridgeError extends Error {
+  code: string;
+  module?: string;
+  method?: string;
+  nativeStack?: string;
+  metadata?: any;
+}
+```
+
+#### Error Codes
+
+- `MODULE_NOT_FOUND` - Native module is not registered
+- `METHOD_NOT_FOUND` - Method does not exist in the module
+- `INVALID_PARAMS` - Invalid parameters passed to method
+- `TIMEOUT` - Method call timed out
+- `NATIVE_ERROR` - Error occurred in native code
+- `SERIALIZATION_ERROR` - Failed to serialize/deserialize data
+- `PERMISSION_DENIED` - Required permission not granted
+- `BRIDGE_NOT_READY` - Bridge is not initialized
+
+#### Global Error Handler
+
+```javascript
+bridge.onError((error) => {
+  console.error('Bridge error:', error.code, error.message);
+  
+  // Log to analytics
+  analytics.track('bridge_error', {
+    code: error.code,
+    module: error.module,
+    method: error.method
+  });
+  
+  // Show user-friendly message
+  if (error.code === 'TIMEOUT') {
+    showToast('Operation timed out. Please try again.');
+  } else if (error.code === 'PERMISSION_DENIED') {
+    showPermissionDialog();
+  }
+});
+```
+
+## TypeScript Support
+
+### Module Interfaces
+
+Define TypeScript interfaces for your native modules.
+
+```typescript
+// Define module interfaces
+interface DeviceModule {
+  getInfo(): Promise<DeviceInfo>;
+  vibrate(duration?: number): Promise<void>;
+  getBatteryLevel(): Promise<number>;
+}
+
+interface CameraModule {
+  takePicture(options: CameraOptions): Promise<Photo>;
+  getPermissions(): Promise<PermissionStatus>;
+  requestPermissions(): Promise<boolean>;
+}
+
+// Extend bridge with typed modules
+declare module '@nativebridge/core' {
+  interface NativeBridge {
+    modules: {
+      Device: DeviceModule;
+      Camera: CameraModule;
+    };
+  }
+}
+
+// Use with full type safety
+const deviceInfo = await bridge.modules.Device.getInfo();
+const photo = await bridge.modules.Camera.takePicture({
+  quality: 'high',
+  format: 'jpeg'
+});
+```
+
+### Event Types
+
+```typescript
+// Define event interfaces
+interface BridgeEvents {
+  'bridge.ready': void;
+  'bridge.error': BridgeError;
+  'battery.levelChanged': { level: number; isCharging: boolean };
+  'camera.photoReady': Photo;
+}
+
+// Typed event listeners
+bridge.on<BridgeEvents['battery.levelChanged']>('battery.levelChanged', (data) => {
+  console.log('Battery level:', data.level);
+  console.log('Is charging:', data.isCharging);
+});
+```
+
+## Testing
+
+### Mock Mode
+
+Enable mock mode for testing without native dependencies.
+
+```javascript
+// Enable mock mode
+const bridge = new NativeBridge({
+  mock: true,
+  mockModules: {
+    Device: {
+      getInfo: () => Promise.resolve({
+        model: 'Mock Device',
+        platform: 'test',
+        version: '1.0.0'
+      })
+    },
+    Camera: {
+      takePicture: () => Promise.resolve({
+        image: 'base64mockimage',
+        width: 1920,
+        height: 1080
+      })
+    }
+  }
+});
+
+// Use normally in tests
+const deviceInfo = await bridge.execute('Device.getInfo');
+expect(deviceInfo.model).toBe('Mock Device');
+```
+
+### Test Utilities
+
+```javascript
+import { createMockBridge } from '@nativebridge/testing';
+
+describe('Bridge Tests', () => {
+  let bridge;
+  
+  beforeEach(() => {
+    bridge = createMockBridge({
+      Device: {
+        getInfo: jest.fn().mockResolvedValue({ model: 'Test' })
+      }
+    });
+  });
+  
+  test('should call device info', async () => {
+    const info = await bridge.execute('Device.getInfo');
+    expect(info.model).toBe('Test');
+    expect(bridge.modules.Device.getInfo).toHaveBeenCalled();
+  });
+});
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion icon="shield" title="Error Handling">
+    - Always wrap bridge calls in try-catch blocks
+    - Implement global error handlers for consistent UX
+    - Provide fallbacks for unsupported features
+    - Log errors for debugging but show user-friendly messages
+  </Accordion>
+  
+  <Accordion icon="rocket" title="Performance">
+    - Use batching for multiple related calls
+    - Enable caching for frequently accessed data
+    - Set appropriate timeouts for different operations
+    - Clean up event listeners when components unmount
+  </Accordion>
+  
+  <Accordion icon="code" title="Type Safety">
+    - Define TypeScript interfaces for all modules
+    - Use typed event listeners
+    - Validate parameters at runtime when necessary
+    - Leverage auto-generated types from native modules
+  </Accordion>
+  
+  <Accordion icon="test-tube" title="Testing">
+    - Use mock mode for unit tests
+    - Test error scenarios
+    - Verify event emission and handling
+    - Mock native modules for isolated testing
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="iOS API"
+    icon="apple"
+    href="/api/ios-api"
+  >
+    Learn about iOS-specific bridge implementation
+  </Card>
+  <Card
+    title="Android API"
+    icon="android"
+    href="/api/android-api"
+  >
+    Explore Android bridge development
+  </Card>
+</CardGroup>
