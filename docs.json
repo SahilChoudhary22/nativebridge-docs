@@ -31,7 +31,9 @@
                 ]
               },
               "platform/app-management/running-and-testing-apps",
+              "platform/app-management/debugging-tools",
               "platform/app-management/app-dashboard",
+              "platform/app-management/activity-dashboard",
               "platform/app-management/permissions",
               "platform/app-management/embedding-apps"
             ]
