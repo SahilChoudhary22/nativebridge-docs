@@ -1,0 +1,386 @@
+---
+title: "API Reference"
+description: "Programmatically manage your apps and automate testing workflows with the NativeBridge REST API"
+---
+
+# API Reference
+
+The NativeBridge REST API enables you to programmatically upload apps, manage builds, generate magic links, and automate your mobile testing workflows.
+
+<Card href="https://documenter.getpostman.com/view/41713518/2sAYkGLf4d" target="_blank">
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className="text-lg font-semibold mb-2">📚 Full API Documentation</h3>
+      <p className="text-gray-600 dark:text-gray-400">
+        View our complete API reference with interactive examples on Postman
+      </p>
+    </div>
+    <Icon icon="external-link" size={24} />
+  </div>
+</Card>
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="App Management" icon="upload">
+    Upload, update, and manage your app builds programmatically
+  </Card>
+
+  <Card title="Magic Links" icon="link">
+    Auto-generate shareable magic links for every build
+  </Card>
+
+  <Card title="CI/CD Integration" icon="code-branch">
+    Integrate with GitHub Actions, GitLab CI, and other pipelines
+  </Card>
+
+  <Card title="Automation" icon="robot">
+    Run automated tests with Appium and Maestro
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+### Authentication
+
+All API requests require authentication using your API key:
+
+```bash
+curl -X POST https://api.nativebridge.dev/v1/apps \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+<Info>
+Get your API key from the [Dashboard](https://nativebridge.io/settings/api-keys) → Settings → API Keys
+</Info>
+
+### Upload Your First App
+
+```bash
+curl -X POST https://api.nativebridge.dev/v1/apps/upload \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -F "file=@path/to/your/app.apk" \
+  -F "platform=android"
+```
+
+The response includes your magic link:
+
+```json
+{
+  "appId": "abc123",
+  "magicLink": "https://nativebridge.io/app/abc123",
+  "embedUrl": "https://nativebridge.io/embed/abc123",
+  "status": "ready"
+}
+```
+
+## CI/CD Integration
+
+### Auto-Generate Magic Links on Every Push
+
+Automatically create magic links for every commit to get instant preview links for your team:
+
+#### GitHub Actions Example
+
+```yaml
+name: Deploy to NativeBridge
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build App
+        run: |
+          # Your build commands here
+          ./gradlew assembleDebug  # Android
+          # or
+          # xcodebuild -scheme YourApp  # iOS
+
+      - name: Upload to NativeBridge
+        id: upload
+        run: |
+          response=$(curl -X POST https://api.nativebridge.dev/v1/apps/upload \
+            -H "Authorization: Bearer ${{ secrets.NATIVEBRIDGE_API_KEY }}" \
+            -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
+            -F "platform=android" \
+            -F "buildMessage=${{ github.event.head_commit.message }}")
+
+          echo "response=$response" >> $GITHUB_OUTPUT
+          magic_link=$(echo $response | jq -r '.magicLink')
+          echo "magic_link=$magic_link" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with Magic Link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **App Preview Ready!**\n\nTest this build: ${{ steps.upload.outputs.magic_link }}\n\n_Powered by NativeBridge_`
+            })
+```
+
+### Auto-Generate Links for Pull Requests
+
+Create preview apps for every PR to streamline code reviews:
+
+#### GitLab CI Example
+
+```yaml
+deploy_preview:
+  stage: deploy
+  script:
+    - |
+      # Build your app
+      ./gradlew assembleDebug
+
+      # Upload to NativeBridge
+      RESPONSE=$(curl -X POST https://api.nativebridge.dev/v1/apps/upload \
+        -H "Authorization: Bearer $NATIVEBRIDGE_API_KEY" \
+        -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
+        -F "platform=android" \
+        -F "buildMessage=PR: $CI_MERGE_REQUEST_TITLE")
+
+      # Extract magic link
+      MAGIC_LINK=$(echo $RESPONSE | jq -r '.magicLink')
+
+      # Post comment to MR
+      curl -X POST "$CI_API_V4_URL/projects/$CI_PROJECT_ID/merge_requests/$CI_MERGE_REQUEST_IID/notes" \
+        -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        -d "body=🚀 **Preview App Ready**: $MAGIC_LINK"
+
+  only:
+    - merge_requests
+```
+
+## Common API Endpoints
+
+### Core Operations
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/apps/upload` | POST | Upload a new app or update existing |
+| `/v1/apps/{appId}` | GET | Get app details and magic link |
+| `/v1/apps/{appId}/builds` | GET | List all builds for an app |
+| `/v1/apps/{appId}` | DELETE | Delete an app |
+| `/v1/apps/{appId}/permissions` | PUT | Update app permissions |
+
+### Automation & Testing
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/v1/sessions/start` | POST | Start a new testing session |
+| `/v1/sessions/{sessionId}/screenshot` | GET | Capture screenshot |
+| `/v1/sessions/{sessionId}/logs` | GET | Get device logs |
+| `/v1/sessions/{sessionId}/stop` | POST | End testing session |
+
+<Info>
+For complete endpoint documentation, request/response schemas, and interactive examples, visit our [Postman Documentation](https://documenter.getpostman.com/view/41713518/2sAYkGLf4d)
+</Info>
+
+## Use Cases
+
+### 1. Continuous Deployment
+
+Automatically deploy every commit:
+
+```javascript
+// Node.js Example
+const FormData = require('form-data');
+const fs = require('fs');
+
+async function deployToNativeBridge(appPath, commitMessage) {
+  const form = new FormData();
+  form.append('file', fs.createReadStream(appPath));
+  form.append('platform', 'ios');
+  form.append('buildMessage', commitMessage);
+
+  const response = await fetch('https://api.nativebridge.dev/v1/apps/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.NATIVEBRIDGE_API_KEY}`,
+      ...form.getHeaders()
+    },
+    body: form
+  });
+
+  const result = await response.json();
+  console.log(`Magic Link: ${result.magicLink}`);
+  return result;
+}
+```
+
+### 2. Nightly Build Distribution
+
+Share nightly builds with your QA team:
+
+```python
+# Python Example
+import requests
+import schedule
+import time
+
+def upload_nightly_build():
+    with open('app-nightly.apk', 'rb') as f:
+        files = {'file': f}
+        data = {
+            'platform': 'android',
+            'buildMessage': f'Nightly Build - {time.strftime("%Y-%m-%d")}'
+        }
+        headers = {
+            'Authorization': f'Bearer {API_KEY}'
+        }
+
+        response = requests.post(
+            'https://api.nativebridge.dev/v1/apps/upload',
+            files=files,
+            data=data,
+            headers=headers
+        )
+
+        magic_link = response.json()['magicLink']
+        send_slack_notification(magic_link)  # Share with team
+
+# Schedule nightly at 2 AM
+schedule.every().day.at("02:00").do(upload_nightly_build)
+```
+
+### 3. Feature Branch Previews
+
+Create previews for each feature branch:
+
+```bash
+#!/bin/bash
+# deploy-preview.sh
+
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+BUILD_MESSAGE="Feature: $BRANCH_NAME"
+
+# Build app
+./gradlew assembleDebug
+
+# Upload and get magic link
+RESPONSE=$(curl -s -X POST https://api.nativebridge.dev/v1/apps/upload \
+  -H "Authorization: Bearer $NATIVEBRIDGE_API_KEY" \
+  -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
+  -F "platform=android" \
+  -F "buildMessage=$BUILD_MESSAGE")
+
+MAGIC_LINK=$(echo $RESPONSE | jq -r '.magicLink')
+
+echo "✅ Preview ready: $MAGIC_LINK"
+
+# Update PR description or send to Slack
+```
+
+## Best Practices
+
+<Tabs>
+  <Tab title="Security">
+    - Store API keys in environment variables or secrets management
+    - Never commit API keys to version control
+    - Use different API keys for production and development
+    - Rotate API keys regularly
+  </Tab>
+
+  <Tab title="Performance">
+    - Compress app files before uploading
+    - Use parallel uploads for multiple platforms
+    - Implement retry logic for network failures
+    - Cache magic links to avoid redundant API calls
+  </Tab>
+
+  <Tab title="Organization">
+    - Use meaningful build messages for easy identification
+    - Tag builds with version numbers and commit hashes
+    - Set appropriate expiration for preview links
+    - Clean up old builds periodically
+  </Tab>
+</Tabs>
+
+## Rate Limits
+
+| Plan | Requests/Hour | Concurrent Uploads | Max App Size |
+|------|---------------|-------------------|--------------|
+| Free | 60 | 1 | 100 MB |
+| Starter | 300 | 3 | 500 MB |
+| Growth | 1000 | 10 | 1 GB |
+| Custom | Unlimited | Unlimited | Unlimited |
+
+## Error Handling
+
+Common error responses and solutions:
+
+```json
+{
+  "error": "INVALID_FILE_FORMAT",
+  "message": "File must be .apk, .app, or .ipa",
+  "solution": "Ensure you're uploading a valid app file"
+}
+```
+
+<AccordionGroup>
+  <Accordion title="401 Unauthorized">
+    Check that your API key is valid and included in the Authorization header
+  </Accordion>
+
+  <Accordion title="413 File Too Large">
+    Compress your app or upgrade to a higher plan for larger file limits
+  </Accordion>
+
+  <Accordion title="429 Rate Limited">
+    You've exceeded the rate limit. Wait and retry or upgrade your plan
+  </Accordion>
+
+  <Accordion title="500 Server Error">
+    Temporary issue on our end. Retry with exponential backoff
+  </Accordion>
+</AccordionGroup>
+
+## SDK & Libraries
+
+<CardGroup cols={3}>
+  <Card title="Node.js SDK" icon="node-js" href="https://npmjs.com/package/nativebridge">
+    npm install nativebridge
+  </Card>
+
+  <Card title="Python SDK" icon="python" href="https://pypi.org/project/nativebridge">
+    pip install nativebridge
+  </Card>
+
+  <Card title="GitHub Action" icon="github" href="https://github.com/marketplace/actions/nativebridge-upload">
+    Official GitHub Action
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="View Full API Docs" icon="book" href="https://documenter.getpostman.com/view/41713518/2sAYkGLf4d">
+    Explore all endpoints with examples
+  </Card>
+
+  <Card title="Get API Key" icon="key" href="https://nativebridge.io/settings/api-keys">
+    Generate your API key to get started
+  </Card>
+
+  <Card title="CI/CD Examples" icon="code-branch" href="/platform/ci-cd-integration">
+    More integration examples
+  </Card>
+
+  <Card title="Support" icon="headset" href="mailto:support@nativebridge.dev">
+    Get help with API integration
+  </Card>
+</CardGroup>

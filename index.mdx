@@ -1,216 +1,74 @@
 ---
-title: "NativeBridge"
-description: "Seamless communication between web and native mobile applications"
+title: "Introduction"
+description: "Run, Test & Develop real iOS and Android apps directly in your browser & IDE(Like VSCode & Cursor) with NativeBridge - no downloads, installations, or extra permissions needed!"
 ---
-
-<Hero>
-  <div className="text-center">
-    <h1 className="text-5xl font-bold mb-4">
-      Bridge the Gap Between Web and Native
-    </h1>
-    <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
-      NativeBridge provides a unified interface for JavaScript applications to communicate with iOS and Android native code seamlessly.
-    </p>
-    <div className="flex gap-4 justify-center">
-      <Card href="/quickstart" horizontal>
-        <div className="flex items-center gap-2">
-          <Icon icon="rocket" />
-          Get Started
-        </div>
-      </Card>
-      <Card href="https://github.com/nativebridge" horizontal>
-        <div className="flex items-center gap-2">
-          <Icon icon="github" />
-          View on GitHub
-        </div>
-      </Card>
-    </div>
-  </div>
-</Hero>
 
 ## Why NativeBridge?
 
-Build hybrid applications with confidence using our battle-tested bridge solution.
+NativeBridge is a cloud-powered platform that lets developers and teams launch, test, and interact with their mobile apps on real & virtual devices straight from the web.
+
+Built to be fast, flexible, and intuitive, NativeBridge is the go-to solution for a variety of use cases, including:
 
 <CardGroup cols={3}>
   <Card
-    title="Universal API"
+    title="Live App Previews"
     icon="globe"
   >
-    Single JavaScript API that works consistently across iOS, Android, and Web platforms
+    Share your app instantly with stakeholders via secure links. Preview builds in real-time across multiple devices without deployment delays
   </Card>
   <Card
-    title="Type-Safe"
+    title="Mobile Testing"
     icon="shield-check"
   >
-    Full TypeScript support with auto-generated types from your native modules
+    Test on 50+ real devices running actual OS versions. Catch device-specific bugs before your users do with comprehensive testing coverage
   </Card>
   <Card
-    title="Performance First"
+    title="Mobile Demos"
     icon="bolt"
   >
-    Optimized message passing with minimal overhead and automatic batching
+    Showcase your app to clients and investors without app store downloads. Launch interactive demos in seconds directly from your browser
   </Card>
   <Card
-    title="Developer Experience"
+    title="Test Automation"
     icon="code"
   >
-    Intuitive API design with comprehensive debugging tools and error handling
+    Run Appium and Maestro scripts at scale. Automate your entire QA pipeline with parallel execution across multiple device configurations
   </Card>
   <Card
-    title="Battle-Tested"
+    title="Training & Onboarding"
     icon="badge-check"
   >
-    Used in production by thousands of apps serving millions of users
+    Onboard new team members 10x faster with hands-on app walkthroughs. Create interactive training sessions without device provisioning
   </Card>
   <Card
-    title="Extensible"
+    title="Embedded Previews"
     icon="puzzle-piece"
   >
-    Easy to add custom native modules and extend functionality
+    Embed live app experiences directly into your documentation, landing pages, or support portals with just an iframe
   </Card>
 </CardGroup>
 
-## Quick Example
+Ready to see NativeBridge in action? Get started in just a few clicks - upload your app or book a demo with us.
 
-See how easy it is to communicate between JavaScript and native code:
+## Upload your first App
+The easiest way to begin with NativeBridge is to upload your app. Follow along at:
+ADD-LINK
 
-<CodeGroup>
+## Run & Test your App
+Once your app is uploaded, you can instantly run the app using magic link.
+ADD-LINK
 
-```javascript JavaScript
-// Call native method from JavaScript
-const result = await NativeBridge.execute('getUserLocation');
-console.log('User location:', result);
+## Share and Embed your App
+You can also embed and share your app with clients and other stakeholders just a click.
+ADD-LINK
 
-// Register a handler for native events
-NativeBridge.on('locationUpdate', (data) => {
-  console.log('New location:', data);
-});
+## Running Automated Tests
+NativeBridge makes it super simple to run automated tests on any device that you want.
+ADD-LINK
 
-// Call native method with parameters
-const photo = await NativeBridge.execute('takePhoto', {
-  quality: 'high',
-  camera: 'front'
-});
-```
-
-```swift iOS (Swift)
-// Register native method
-NativeBridge.register("getUserLocation") { params, callback in
-    let location = LocationManager.shared.currentLocation
-    callback(.success([
-        "latitude": location.latitude,
-        "longitude": location.longitude
-    ]))
-}
-
-// Emit event to JavaScript
-NativeBridge.emit("locationUpdate", data: [
-    "latitude": newLocation.latitude,
-    "longitude": newLocation.longitude
-])
-```
-
-```kotlin Android (Kotlin)
-// Register native method
-NativeBridge.register("getUserLocation") { params, callback ->
-    val location = LocationManager.getCurrentLocation()
-    callback.success(mapOf(
-        "latitude" to location.latitude,
-        "longitude" to location.longitude
-    ))
-}
-
-// Emit event to JavaScript
-NativeBridge.emit("locationUpdate", mapOf(
-    "latitude" to newLocation.latitude,
-    "longitude" to newLocation.longitude
-))
-```
-
-</CodeGroup>
-
-## Core Features
-
-<Columns cols={2}>
-  <div>
-    ### 🔄 Bidirectional Communication
-
-    Call native methods from JavaScript and vice versa with promise-based APIs and event emitters.
-
-    ### 📦 Module System
-
-    Organize native functionality into modules with namespaced methods for better code organization.
-
-    ### 🔍 Deep Debugging
-
-    Built-in debugging tools to inspect bridge traffic, performance metrics, and error tracking.
-  </div>
-
-  <div>
-    ### ⚡ Automatic Serialization
-
-    Seamlessly pass complex data structures between JavaScript and native code without manual conversion.
-
-    ### 🛡️ Error Boundaries
-
-    Robust error handling ensures one module's failure doesn't crash your entire application.
-
-    ### 📱 Platform Detection
-
-    Automatically detect platform capabilities and provide fallbacks for unsupported features.
-  </div>
-</Columns>
-
-## Getting Started
-
-Ready to integrate NativeBridge into your application?
-
-<CardGroup cols={2}>
-  <Card
-    title="Installation Guide"
-    icon="download"
-    href="/installation"
-  >
-    Step-by-step guide to add NativeBridge to your project
-  </Card>
-  <Card
-    title="Quick Start Tutorial"
-    icon="rocket"
-    href="/quickstart"
-  >
-    Build your first bridge communication in 5 minutes
-  </Card>
-  <Card
-    title="API Documentation"
-    icon="book"
-    href="/api/javascript-api"
-  >
-    Complete API reference for all platforms
-  </Card>
-  <Card
-    title="Examples"
-    icon="code"
-    href="/examples/hello-world"
-  >
-    Learn from real-world implementation examples
-  </Card>
-</CardGroup>
-
-## Join the Community
-
-<Card href="https://discord.gg/nativebridge">
-  <div className="flex items-center justify-between">
-    <div>
-      <h3 className="text-lg font-semibold mb-2">Discord Community</h3>
-      <p className="text-gray-600 dark:text-gray-400">
-        Get help, share your projects, and connect with other developers using NativeBridge.
-      </p>
-    </div>
-    <Icon icon="discord" size={32} />
-  </div>
-</Card>
+## App Automation Management
+There's a dedicated section for managing all your app automation scripts. We support most of the popular frameworks/libraries including Appium & Maestro.
 
 <Note>
-  **Need enterprise support?** Contact us at [enterprise@nativebridge.dev](mailto:enterprise@nativebridge.dev) for dedicated support, custom modules, and training.
+  **Need enterprise support?** Contact us at [contact@autoflowapp.com](mailto:contact@autoflowapp.com) for dedicated support, custom modules, and training.
 </Note>

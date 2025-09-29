@@ -1,0 +1,83 @@
+---
+title: "iOS"
+description: "Upload and test your iOS applications on real iPhone and iPad devices in the cloud"
+---
+
+# iOS
+
+NativeBridge currently only supports iOS Simulator builds (**.app**). A simulator build can be run in the iOS Simulator with Xcode. AppStore distribution device builds (**.ipa**) are also supported.
+
+<Info>
+For optimal performance and compatibility, we recommend uploading ARM simulator builds of your iOS app.
+</Info>
+
+## Finding your .app file
+
+### With Xcode
+
+The easiest way to get the iOS Simulator build is to run and build your application in Xcode while targeting an iOS Simulator.
+
+<Steps>
+  <Step title="Select iOS Simulator">
+    Build and run your application from Xcode while targeting a simulator device from the device dropdown.
+  </Step>
+
+  <Step title="Build Your App">
+    Once the build is complete and the app is running in the simulator, you can locate the `.app` file by navigating to **Product** → **Show Build Folder in Finder** → **Products/Debug-iphonesimulator**
+  </Step>
+</Steps>
+
+### With Xcode Command Line Tools
+
+You can also generate the iOS Simulator build of your app by building it directly via the command line using `xcodebuild`.
+
+#### With .xcodeproj
+
+```bash
+xcodebuild -project '{project_name}.xcodeproj' \
+ -scheme '{scheme_name}' \
+ -sdk iphonesimulator \
+ -configuration Debug
+```
+
+#### With .xcworkspace
+
+```bash
+xcodebuild -workspace '{your_workspace_name}.xcworkspace' \
+ -scheme '{scheme_name}' \
+ -sdk iphonesimulator \
+ -configuration Debug
+```
+
+The `app` file can then be found under:
+
+```
+build/Debug-iphonesimulator/
+```
+
+## Compress your .app file
+
+Once you have located your `.app` file, NativeBridge requires it to be in a compressed `zip` or `tar.gz` file:
+
+```bash
+zip -r {app_name}.zip {app_name}.app
+```
+
+## Troubleshooting
+
+If you are having trouble running your uploaded iOS app in NativeBridge, we recommend trying to run the same app on a simulator provided by Apple in Xcode.
+
+Once your simulator is launched, you can simply drag the `.app` file into the simulator window to test it locally first.
+
+Also check our [Knowledge Base](https://support.nativebridge.dev/) for frequently asked questions and solutions.
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Upload Your App" icon="upload" href="/platform/app-management/uploading-apps/uploading-apps">
+    Ready to upload? Head to our upload page
+  </Card>
+  <Card title="Android Build" icon="android" href="/platform/app-management/uploading-apps/android">
+    Learn about Android app preparation
+  </Card>
+</CardGroup>

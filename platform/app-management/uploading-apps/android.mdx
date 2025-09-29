@@ -1,0 +1,84 @@
+---
+title: "Android"
+description: "Upload and test your Android applications on real devices in the cloud"
+---
+
+# Android
+
+## Finding your APK file
+
+### With Android Studio
+
+Select **Build** → **Build APK(s)** → **Build APK(s)** or **Build** → **Generate Signed APK** (and follow the prompts)
+
+<Steps>
+  <Step title="Build Your APK">
+    Navigate to the Build menu in Android Studio and select your preferred build option
+  </Step>
+
+  <Step title="Locate Your APK">
+    Once the build is complete, you can locate the `.apk` file by selecting `locate` in the dialog that appears, or by navigating to:
+    ```
+    {project_name}/{app_module_name}/build/outputs/apk/
+    ```
+  </Step>
+</Steps>
+
+### With Gradle
+
+Generate your build with `gradle` by running the `assemble` command for your preferred app build variant (e.g. `debug` variant):
+
+```bash
+./gradlew assembleDebug
+```
+
+Once the build is complete, you can locate the `.apk` file by navigating to:
+
+```
+{project_name}/{app_module_name}/build/outputs/apk/
+```
+
+## Converting AAB to APK
+
+NativeBridge currently only supports `apk` files for Android. If you have an `aab` (Android App Bundle) file, you'll need to convert it to an `apk` using Google's [`bundletool`](https://developer.android.com/tools/bundletool).
+
+### Generate Universal APKs
+
+```bash
+bundletool build-apks --bundle=/<your_app>/{aab_name}.aab \
+    --output=/{your_app}/{app_name}.apks \
+    --mode=universal
+```
+
+### Extract Single APK file
+
+```bash
+unzip -p /{your_app}/{app_name}.apks universal.apk > /{your_app}/{app_name}.apk
+```
+
+## Troubleshooting
+
+If you are having trouble running your uploaded Android app in NativeBridge, we recommend testing the same APK on the standard Google-provided Android emulator locally over ADB.
+
+Once your emulator is launched and available via `adb devices`, you can install it using:
+
+```bash
+adb install -r {your_app}.apk
+```
+
+Or simply drag the `apk` file into the emulator window.
+
+<Info>
+Check our [Knowledge Base](https://support.nativebridge.dev/) for frequently asked questions and solutions.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Upload Your App" icon="upload" href="/platform/app-management/uploading-apps/uploading-apps">
+    Ready to upload? Head to our upload page
+  </Card>
+  <Card title="iOS Build" icon="apple" href="/platform/app-management/uploading-apps/ios">
+    Learn about iOS app preparation
+  </Card>
+</CardGroup>

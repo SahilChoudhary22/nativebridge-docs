@@ -1,0 +1,216 @@
+---
+title: "Running & Testing Apps"
+description: "Run, test, and debug your mobile apps instantly on real devices in the cloud via magic links"
+---
+
+# Running Apps
+
+## The App Page: Your Magic Link Destination
+
+When anyone clicks a **magic link** you've shared, they're instantly taken to the **App Page** - NativeBridge's powerful, browser-based testing environment. No downloads, no installations, no setup - just immediate access to your app running on real devices in the cloud.
+
+<Note>
+**What is the App Page?**
+The App Page is the interactive testing interface that opens when someone clicks your magic link. It's where your app comes to life in the browser, complete with device controls, debugging tools, and testing features.
+</Note>
+
+<Frame>
+  <img src="/images/app-page-overview.png" alt="NativeBridge App Page - What users see when clicking a magic link" />
+</Frame>
+
+## Features Available on the App Page
+
+When stakeholders access your app via magic link, they get instant access to:
+
+### Device & OS Selection
+* Wide range of [supported devices and OS versions](/features/devices-and-os-versions)
+* Switch between different device models in real-time
+* Test on the latest iOS and Android versions
+
+### Debugging Tools
+Advanced debugging capabilities to streamline your development:
+
+* **[UI Automation (AppRecorder)](/features/ui-automation)** - Record and replay user interactions
+* **[Network Traffic Monitor](/features/network-traffic-monitor)** - Inspect all network requests and responses
+* **[Debug Logs](/features/debug-logs)** - View console and system logs in real-time
+* **[ADB Tunnel](/features/advanced-features/android/adb-tunnel)** - Direct ADB access (Android only)
+
+### Device Toolbar
+
+Complete control over device features and settings:
+
+<Tabs>
+  <Tab title="System Controls">
+    * Home/Lock buttons
+    * Rotate device orientation
+    * Shake device gesture
+    * Toggle soft keyboard
+  </Tab>
+
+  <Tab title="Device Settings">
+    * Light/Dark mode toggle
+    * Change GPS location
+    * Switch between languages
+    * Adjust font scale
+  </Tab>
+
+  <Tab title="Testing Features">
+    * Biometric authentication
+    * Add media files
+    * Take screenshots
+    * Screen recording
+  </Tab>
+</Tabs>
+
+## Accessing the App Page
+
+The App Page is what your users see when they click on a magic link. There are several ways to access it:
+
+### Via Magic Link (Primary Method)
+
+When you upload an app and generate a magic link, anyone with the link can instantly access the App Page:
+
+```
+https://nativebridge.io/app/{appId}
+```
+
+<Info>
+**This is what happens when someone clicks your magic link:**
+1. They're taken directly to the App Page in their browser
+2. The app loads instantly on a cloud device
+3. They can start testing immediately - no setup required
+</Info>
+
+### Direct Access Methods
+
+#### Latest Build
+
+The magic link defaults to the latest version of the app when opened. You can access the most recent build directly:
+
+```
+https://nativebridge.io/app/{appId}
+```
+
+<Steps>
+  <Step title="Navigate to Apps Dashboard">
+    Go to your [Apps Dashboard](https://nativebridge.io/apps)
+  </Step>
+
+  <Step title="Select Your App">
+    Click the **Play** button on the app you want to run
+  </Step>
+
+  <Step title="App Page Opens">
+    The App Page launches with your app running on the selected device
+  </Step>
+</Steps>
+
+#### Specific Build
+
+Access a specific build version using the version or via the drop down on the magic link page:
+
+```
+https://nativebridge.io/app/{appId}?version={appVersion}
+```
+
+Example
+```
+https://nativebridge.io/app/aBcD?version=3.0
+```
+
+To access specific builds through the dashboard:
+
+1. Navigate to your [Apps page](https://nativebridge.io/apps)
+2. Select the app containing your desired build
+3. Browse and select from available builds in the builds history
+4. The App Page opens with that specific build
+
+## Creating & Sharing Magic Links
+
+Magic links are the primary way to share your app. When recipients click the link, they're taken directly to the App Page where your app runs instantly.
+
+<CardGroup cols={2}>
+  <Card title="Generate Link" icon="link">
+    Upload your app and instantly get a magic link that opens the App Page
+  </Card>
+
+  <Card title="Set Permissions" icon="shield">
+    Control what features are available on the App Page for different users
+  </Card>
+
+  <Card title="Track Usage" icon="chart-bar">
+    Monitor how users interact with your app through the App Page
+  </Card>
+
+  <Card title="Expire Links" icon="clock">
+    Set time limits for how long the App Page remains accessible
+  </Card>
+</CardGroup>
+
+<Warning>
+**Important:** Anyone with the magic link can access the App Page and test your app. Share links only with intended recipients and use expiration dates for sensitive apps.
+</Warning>
+
+## Testing Workflows on the App Page
+
+When you or your stakeholders access the App Page via magic link, several testing workflows are available:
+
+### Manual Testing
+
+Perfect for exploratory testing and bug reproduction directly on the App Page:
+
+1. Click the magic link to open the App Page
+2. Select your target device and OS from the toolbar
+3. Interact with your app as a real user would
+4. Use the built-in debugging tools to identify issues
+5. Share findings with your team instantly
+
+### Stakeholder Review
+
+The App Page is ideal for getting feedback without technical setup:
+
+1. Generate a magic link after uploading your app
+2. Share the link with stakeholders via email or chat
+3. They click the link and the App Page opens immediately
+4. They can test the app and provide feedback in real-time
+5. No app stores, no downloads, no provisioning profiles needed
+
+### Automated Testing
+
+While users interact with the App Page manually, you can also:
+
+* Run Appium tests against the same environment
+* Execute Maestro flows
+* Perform regression testing
+* Generate test reports
+
+### Cross-Platform Testing
+
+The App Page allows instant switching between configurations:
+
+* Different OS versions
+* Various screen sizes
+* Multiple device manufacturers
+* Network conditions
+
+All accessible from the same magic link!
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Debugging Features" icon="bug" href="/features/debugging">
+    Learn about advanced debugging tools
+  </Card>
+
+  <Card title="Test Automation" icon="robot" href="/platform/test-automation">
+    Set up automated testing workflows
+  </Card>
+
+  <Card title="Share Your App" icon="share" href="/platform/sharing-apps">
+    Create magic links for stakeholders
+  </Card>
+
+  <Card title="API Integration" icon="code" href="/rest-api">
+    Integrate with your development workflow
+  </Card>
+</CardGroup>

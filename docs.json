@@ -16,79 +16,37 @@
           {
             "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
-              "installation",
-              "configuration"
+              "index"
             ]
           },
           {
-            "group": "Core Concepts",
+            "group": "Platform",
             "pages": [
-              "concepts/bridge-interface",
-              "concepts/native-modules",
-              "concepts/communication-protocol",
-              "concepts/data-serialization"
+              {
+                "group": "Uploading Apps",
+                "pages": [
+                  "platform/app-management/uploading-apps/uploading-apps",
+                  "platform/app-management/uploading-apps/ios",
+                  "platform/app-management/uploading-apps/android"
+                ]
+              },
+              "platform/app-management/running-and-testing-apps",
+              "platform/app-management/app-dashboard",
+              "platform/app-management/permissions",
+              "platform/app-management/embedding-apps"
             ]
           },
           {
-            "group": "API Reference",
+            "group": "Testing",
             "pages": [
-              "api/javascript-api",
-              "api/ios-api",
-              "api/android-api",
-              "api/methods"
+              "testing/test-automation"
             ]
           },
           {
-            "group": "Guides",
+            "group": "API",
             "pages": [
-              "guides/ios-integration",
-              "guides/android-integration",
-              "guides/web-integration",
-              "guides/debugging"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Examples",
-        "groups": [
-          {
-            "group": "Basic Examples",
-            "pages": [
-              "examples/hello-world",
-              "examples/data-passing",
-              "examples/callbacks"
-            ]
-          },
-          {
-            "group": "Advanced Examples",
-            "pages": [
-              "examples/camera-access",
-              "examples/file-handling",
-              "examples/push-notifications",
-              "examples/biometric-auth"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "Bridge API",
-            "pages": [
-              "api-reference/introduction"
-            ]
-          },
-          {
-            "group": "Methods",
-            "pages": [
-              "api-reference/endpoint/execute",
-              "api-reference/endpoint/register",
-              "api-reference/endpoint/listen",
-              "api-reference/endpoint/emit"
+              "getting-api-key",
+              "api-reference"
             ]
           }
         ]

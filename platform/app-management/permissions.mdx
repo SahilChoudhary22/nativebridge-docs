@@ -1,0 +1,211 @@
+---
+title: "App Permissions"
+description: "Control who can access your app and what features they can use"
+---
+
+# App Permissions
+
+## Who Can Run Your App
+
+Control access to your app through different sharing methods and permission levels.
+
+### Magic Link Access
+
+When you share your app via magic link, you have control over who can access it:
+
+```
+https://nativebridge.io/app/{appId}
+```
+
+By default, anyone with the magic link can run your app. This makes it easy to share with stakeholders, clients, and testers without requiring them to create accounts.
+
+### Authenticated Access
+
+For apps containing sensitive data, you can require users to be authenticated and linked to your organization before they can access the App Page.
+
+## Permission Levels
+
+NativeBridge offers flexible permission management at two levels:
+
+<Note>Advanced permissions are only available for Starter, Growth and Custom plans</Note>
+
+### Organization-Level Permissions
+
+Set default permissions that apply to all apps in your organization:
+
+<Steps>
+  <Step title="Navigate to Organization Settings">
+    Go to [Organization → Session Defaults](https://nativebridge.io/organization/session-defaults)
+  </Step>
+
+  <Step title="Configure Default Permissions">
+    Set your preferred default permissions for all apps
+  </Step>
+
+  <Step title="Save Changes">
+    These settings will apply to all new apps and existing apps without custom permissions
+  </Step>
+</Steps>
+
+<Frame>
+  <img src="/images/organization-permissions.png" alt="Organization Default Permissions" />
+</Frame>
+
+### App-Level Permissions
+
+Override organization defaults with app-specific permissions:
+
+<Warning>
+App-level permissions will override organization defaults. We recommend using organization-level permissions for consistency unless you need specific exceptions.
+</Warning>
+
+<Steps>
+  <Step title="Select Your App">
+    Navigate to your [Dashboard](https://nativebridge.io/dashboard) and select your app
+  </Step>
+
+  <Step title="Choose Build">
+    Select the specific build you want to configure permissions for
+  </Step>
+
+  <Step title="Configure Permissions">
+    Go to **Settings → App Permissions** and adjust as needed
+  </Step>
+</Steps>
+
+<Frame>
+  <img src="/images/app-build-permissions.png" alt="App Build Level Permissions" />
+</Frame>
+
+<Info>
+App permissions can also be configured when uploading via our REST API. See [Create new app](/rest-api/create-new-app) and [Update existing app](/rest-api/update-existing-app) for API usage.
+</Info>
+
+## Available Permissions
+
+Configure these permissions to control what features are available when someone accesses your app:
+
+| Permission | Description | Default |
+|------------|-------------|---------|
+| **run** | Allow running your application | ✅ Enabled |
+| **networkProxy** | Specify a custom network proxy when running the app | ❌ Auth Required |
+| **networkIntercept** | Use NativeBridge's intercepting proxy for network debugging | ❌ Auth Required |
+| **debugLog** | View app's console output (NSLog/Logger or Logcat) | ❌ Auth Required |
+| **adbConnect** | Connect ADB for Android debugging | ❌ Auth Required |
+| **androidPackageManager** | Install additional APKs during app session | ❌ Auth Required |
+| **deviceControl** | Access device controls (rotation, location, etc.) | ✅ Enabled |
+| **mediaUpload** | Upload images/videos to the device | ✅ Enabled |
+| **screenshot** | Take screenshots of the app | ✅ Enabled |
+
+## Permission Scenarios
+
+### Public Demo
+
+For public demos and marketing:
+- **run**: Public
+- **screenshot**: Public
+- **deviceControl**: Public
+- All debugging features: Authenticated
+
+### Internal Testing
+
+For QA and development teams:
+- All permissions: Authenticated
+- Requires team members to sign in
+
+### Client Review
+
+For sharing with clients:
+- **run**: Public
+- **screenshot**: Public
+- **deviceControl**: Public
+- Technical features: Authenticated
+
+### Beta Testing
+
+For beta testers:
+- **run**: Public with expiring links
+- **screenshot**: Public
+- **debugLog**: Public (for bug reports)
+- Admin features: Authenticated
+
+## Security Best Practices
+
+<Cards>
+  <Card title="Use Expiring Links" icon="clock">
+    Set expiration dates on magic links for time-limited access
+  </Card>
+
+  <Card title="Require Authentication" icon="lock">
+    Enable authentication for apps with sensitive data
+  </Card>
+
+  <Card title="Limit Debug Access" icon="shield">
+    Keep debugging features restricted to authenticated users
+  </Card>
+
+  <Card title="Monitor Usage" icon="chart-line">
+    Track who accesses your apps and when
+  </Card>
+</Cards>
+
+## Managing Access
+
+### Revoking Access
+
+To revoke access to a shared app:
+
+1. **Delete the magic link** - Removes public access immediately
+2. **Update permissions** - Change to authenticated-only access
+3. **Upload new build** - Previous build links become invalid
+
+### Tracking Usage
+
+Monitor app access through:
+- Usage analytics dashboard
+- Access logs
+- Session recordings (with permission)
+
+## API Configuration
+
+Configure permissions programmatically when uploading apps:
+
+```javascript
+// Upload with custom permissions
+const response = await fetch('https://api.nativebridge.dev/v1/apps', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_API_KEY',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    file: appFile,
+    permissions: {
+      run: 'public',
+      debugLog: 'authenticated',
+      networkIntercept: 'authenticated',
+      adbConnect: 'authenticated'
+    }
+  })
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Upload Your App" icon="upload" href="/platform/app-management/uploading-apps/uploading-apps">
+    Start uploading and setting permissions
+  </Card>
+
+  <Card title="Share Your App" icon="share" href="/platform/sharing-apps">
+    Learn about sharing options
+  </Card>
+
+  <Card title="Organization Settings" icon="building" href="/platform/organization">
+    Configure organization-wide settings
+  </Card>
+
+  <Card title="REST API" icon="code" href="/rest-api">
+    Automate permission management
+  </Card>
+</CardGroup>

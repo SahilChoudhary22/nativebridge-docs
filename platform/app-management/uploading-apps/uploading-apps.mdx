@@ -1,0 +1,111 @@
+---
+title: "Uploading Apps"
+description: "Get your mobile app onto NativeBridge in just minutes - ready to use across all major devices and operating systems."
+---
+
+# Uploading Apps
+
+## Preparing your Build
+
+<CardGroup cols={2}>
+  <Card title="Android" icon="android" href="/platform/app-management/uploading-apps/android">
+    Learn how to prepare your Android APK for upload
+  </Card>
+  <Card title="iOS" icon="apple" href="/platform/app-management/uploading-apps/ios">
+    Learn how to prepare your iOS app for upload
+  </Card>
+</CardGroup>
+
+<Info>
+We support cross-platform apps made in Flutter, Xamarin, React-Native, Kotlin Multiplatform and others which generate `.app` or `.apk` builds.
+
+For common issues and troubleshooting, visit our [Knowledge base](https://support.nativebridge.dev/uploading-and-installing-apps).
+</Info>
+
+## Upload your App
+
+### With Upload Page
+
+To upload your application via a web browser use our [Upload](https://nativebridge.io/upload) dialog:
+
+<Frame>
+  <iframe
+    src="https://nativebridge.io/upload"
+    width="100%"
+    height="600px"
+    style={{border: "1px solid #e5e7eb", borderRadius: "8px"}}
+  />
+</Frame>
+
+#### Update existing Apps
+
+To update an existing app, follow the same steps as uploading a new app via the [Upload](https://nativebridge.io/upload) dialog. The latest build will automatically be associated with your app.
+
+To view all builds for an app, select the app and go to the App Builds Page.
+
+<Warning>
+In some instances, you might want to explicitly update a particular app build. To do so, follow these steps:
+
+1. Go to the [Apps Dashboard](https://nativebridge.io/apps)
+2. **Select the app**
+3. **Search and select the build** you want to update
+4. Go to **Settings**
+5. Navigate to "**Update build**"
+</Warning>
+
+### With CI/CD and Third-Party Integrations
+
+NativeBridge integrates with several popular CI/CD tools and other third-party services, allowing you to:
+
+* **Ensure Your App is Always Up-To-Date:**
+  Automatically upload the latest builds with one of our many CI/CD integrations.
+* **Eliminate Manual Processes:**
+  Automate rolling out of updated apps or specific builds, saving time and effort.
+* **Improve User and Development Workflows:**
+  Integrate with tools such as Storybook Native and Expo to improve user and developer experiences.
+* **Run Tests on Pull Requests:**
+  Automatically upload and test builds on Pull Requests for efficient quality assurance.
+
+Available integrations include:
+
+<CardGroup cols={3}>
+  <Card title="GitHub Actions" icon="github" href="https://github.com/nativebridge/github-action-nativebridge">
+    Automate your workflow with GitHub Actions
+  </Card>
+  <Card title="GitLab" icon="gitlab" href="https://docs.nativebridge.dev/guides/gitlab-integration">
+    Create review apps with GitLab CI/CD
+  </Card>
+  <Card title="Bitrise" icon="code-branch" href="https://bitrise.io/integrations/steps/nativebridge-deploy">
+    Deploy with Bitrise step
+  </Card>
+  <Card title="Expo" icon="mobile" href="https://expo.dev/">
+    Seamless integration with Expo
+  </Card>
+  <Card title="Fastlane" icon="rocket" href="https://docs.fastlane.tools/actions/nativebridge/">
+    Automate with Fastlane
+  </Card>
+  <Card title="Storybook Native" icon="book" href="https://github.com/storybookjs/native">
+    Component-driven development
+  </Card>
+</CardGroup>
+
+<Info>
+If there is a 3rd party integration that you think should be on this list, please let us [know](mailto:support@nativebridge.dev)!
+</Info>
+
+### With REST API
+
+NativeBridge also supports uploading your application programmatically by making use of our REST API:
+
+<CardGroup cols={2}>
+  <Card title="Create New App" icon="plus" href="/rest-api/create-new-app">
+    Upload a new app via API
+  </Card>
+  <Card title="Update Existing App" icon="refresh" href="/rest-api/update-existing-app">
+    Update an existing app via API
+  </Card>
+</CardGroup>
+
+<Note>
+The **latest build** refers to the most recent version of your app on Android, identified by the [versionCode](https://developer.android.com/studio/publish/versioning#versioningsettings), and on iOS, by the [CFBundleShortVersionString](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleshortversionstring) and [CFBundleVersion](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleversion).
+</Note>

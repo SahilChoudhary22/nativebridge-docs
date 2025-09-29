@@ -1,0 +1,370 @@
+---
+title: "Embedding Apps"
+description: "Embed your mobile apps directly into websites, documentation, and products using iframes"
+---
+
+# Embedding Apps
+
+Embed NativeBridge virtual devices directly into your own websites and products using iframes. Perfect for product demos, documentation, support portals, and interactive showcases.
+
+## Finding Your Embed Link
+
+Get your embed link in just a few clicks:
+
+<Steps>
+  <Step title="Navigate to Your Apps">
+    Go to your [Apps Dashboard](https://nativebridge.io/apps) or [App Builds](/platform/app-management/app-dashboard#app-builds-page) page
+  </Step>
+
+  <Step title="Click Share">
+    Select the **Share** button under the app or build you want to embed
+  </Step>
+
+  <Step title="Copy Embed Link">
+    Choose "Embed" from the share options to get your iframe-ready link
+  </Step>
+</Steps>
+
+<Frame>
+  <img src="/images/share-embed-dialog.png" alt="Share dialog showing embed options" />
+</Frame>
+
+<Tip>
+Test all [Query Parameters](/platform/query-params-reference) on your [App Page](/platform/app-management/running-and-testing-apps) first, then switch the URL from `/app/` to `/embed/` for iframe usage.
+</Tip>
+
+## Basic Embedding
+
+Add your app to any website with a simple iframe:
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/{appId}?theme=light"
+  width="400px"
+  height="642px"
+  title="Your App Name - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+```
+
+### Live Example
+
+Here's a real embedded app using NativeBridge:
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/VpJE?theme=light"
+  width="400px"
+  height="642px"
+  title="Your Mobile App - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+```
+
+## Embedding Options
+
+<Note>Advanced Embedding options are only available with Starter, Growth and Custom plans. </Note>
+
+### Responsive Design
+
+Make your embedded app responsive to different screen sizes:
+
+```html
+<div style="position: relative; padding-bottom: 160.5%; height: 0;">
+  <iframe
+    src="https://nativebridge.io/embed/{appId}?theme=light"
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+    title="Your App Name - Powered By NativeBridge"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen>
+  </iframe>
+</div>
+```
+
+### Custom Device Frame
+
+Add device frames for a more realistic appearance:
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/{appId}?device=iphone14pro&deviceColor=black&theme=light"
+  width="430px"
+  height="932px"
+  title="Your App Name - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+```
+
+### Autoplay Demo
+
+Start your app automatically when the page loads:
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/{appId}?autoplay=true&launchUrl=home&theme=light"
+  width="400px"
+  height="642px"
+  title="Your App Name - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+```
+
+## Advanced Configurations
+
+### With Query Parameters
+
+Customize the embedded experience with query parameters:
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/{appId}?device=pixel7&osVersion=13&scale=75&centered=true&theme=light"
+  width="500px"
+  height="800px"
+  title="Your App Name - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+```
+
+### Popular Parameters for Embedding
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `theme` | Set light or dark theme | `theme=light` |
+| `device` | Set specific device model | `device=iphone15` |
+| `osVersion` | Choose OS version | `osVersion=17.0` |
+| `scale` | Adjust device size (25-100) | `scale=75` |
+| `centered` | Center device in frame | `centered=true` |
+| `deviceColor` | Device frame color | `deviceColor=white` |
+| `hideControls` | Hide device controls | `hideControls=true` |
+| `language` | Set device language | `language=es` |
+| `autoplay` | Start app automatically | `autoplay=true` |
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Product Demos" icon="presentation">
+    Embed interactive demos on your landing page to showcase features without downloads
+  </Card>
+
+  <Card title="Documentation" icon="book">
+    Add live app examples directly in your docs for hands-on learning
+  </Card>
+
+  <Card title="Support Portal" icon="headset">
+    Let customers reproduce issues in an embedded app for better support
+  </Card>
+
+  <Card title="Marketing Sites" icon="bullhorn">
+    Create engaging product tours with embedded interactive experiences
+  </Card>
+
+  <Card title="Training Materials" icon="graduation-cap">
+    Include live app instances in training content for practical learning
+  </Card>
+
+  <Card title="Blog Posts" icon="newspaper">
+    Enhance articles with embedded app demos for better engagement
+  </Card>
+</CardGroup>
+
+## Embedding in Different Platforms
+
+### WordPress
+
+Add to your WordPress site using the Custom HTML block:
+
+```html
+<!-- Add this to a Custom HTML block -->
+<div class="nativebridge-embed">
+  <iframe
+    src="https://nativebridge.io/embed/{appId}?theme=light"
+    width="400px"
+    height="642px"
+    title="Your App Name - Powered By NativeBridge"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen>
+  </iframe>
+</div>
+```
+
+### React
+
+Embed in your React application:
+
+```jsx
+function AppDemo() {
+  return (
+    <iframe
+      src="https://nativebridge.io/embed/{appId}?theme=light"
+      width="400"
+      height="642"
+      title="Your App Name - Powered By NativeBridge"
+      frameBorder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerPolicy="strict-origin-when-cross-origin"
+      allowFullScreen
+    />
+  );
+}
+```
+
+## Security & Permissions
+
+### Content Security Policy
+
+If your site uses CSP headers, add NativeBridge to your allowed frame sources:
+
+```
+Content-Security-Policy: frame-src https://nativebridge.io https://*.nativebridge.io;
+```
+
+### Sandbox Attributes
+
+For additional security, you can add sandbox attributes (note: this may limit some functionality):
+
+```html
+<iframe
+  src="https://nativebridge.io/embed/{appId}?theme=light"
+  width="400px"
+  height="642px"
+  title="Your App Name - Powered By NativeBridge"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+  allowfullscreen>
+</iframe>
+```
+
+## Best Practices
+
+<Tabs>
+  <Tab title="Performance">
+    - **Lazy Load**: Load iframes only when visible
+    - **Optimize Size**: Use appropriate dimensions for your use case
+    - **Cache**: Leverage browser caching for repeat visitors
+    - **CDN**: Ensure your page uses a CDN for faster loading
+  </Tab>
+
+  <Tab title="User Experience">
+    - **Loading States**: Show a placeholder while iframe loads
+    - **Responsive**: Ensure embeds work on all screen sizes
+    - **Context**: Provide instructions or context around the embed
+    - **Fallback**: Include a fallback link if iframe fails
+  </Tab>
+
+  <Tab title="Accessibility">
+    - **Title**: Always include a descriptive title attribute
+    - **Alternative**: Provide text alternatives for screen readers
+    - **Keyboard**: Ensure keyboard navigation works properly
+    - **Focus**: Manage focus states appropriately
+  </Tab>
+</Tabs>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Embed not loading">
+    - Check if your embed URL is correct
+    - Verify app permissions allow public embedding
+    - Ensure no browser extensions are blocking iframes
+    - Check browser console for CSP errors
+  </Accordion>
+
+  <Accordion title="Display issues">
+    - Verify iframe dimensions match device size
+    - Check if scale parameter is set appropriately
+    - Ensure parent container has sufficient space
+    - Test in different browsers
+  </Accordion>
+
+  <Accordion title="Performance problems">
+    - Implement lazy loading for multiple embeds
+    - Reduce number of embeds per page
+    - Use smaller device scale when possible
+    - Enable browser caching
+  </Accordion>
+
+  <Accordion title="Interaction limitations">
+    - Some features may require full App Page access
+    - Check if permissions are properly configured
+    - Verify query parameters are correctly formatted
+    - Test on actual App Page first
+  </Accordion>
+</AccordionGroup>
+
+## API Integration
+
+Control embedded apps programmatically:
+
+```javascript
+// Dynamically create and configure embedded app
+function embedApp(containerId, appId, options = {}) {
+  const container = document.getElementById(containerId);
+  const iframe = document.createElement('iframe');
+
+  // Build URL with parameters
+  const params = new URLSearchParams(options);
+  iframe.src = `https://nativebridge.io/embed/${appId}?${params}`;
+
+  // Set iframe attributes
+  iframe.width = options.width || '400';
+  iframe.height = options.height || '642';
+  iframe.title = options.title || 'App Demo - Powered By NativeBridge';
+  iframe.frameBorder = '0';
+  iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+  iframe.allowFullscreen = true;
+
+  container.appendChild(iframe);
+}
+
+// Usage
+embedApp('demo-container', 'VpJE', {
+  theme: 'light',
+  device: 'iphone14pro',
+  scale: 75,
+  centered: true,
+  autoplay: true,
+  title: 'Your Mobile App - Powered By NativeBridge'
+});
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Query Parameters" icon="sliders" href="/platform/query-params-reference">
+    Explore all available customization options
+  </Card>
+
+  <Card title="Share Your App" icon="share" href="/platform/sharing-apps">
+    Learn about other sharing methods
+  </Card>
+
+  <Card title="App Permissions" icon="lock" href="/platform/app-management/permissions">
+    Configure who can embed your apps
+  </Card>
+
+  <Card title="REST API" icon="code" href="/rest-api">
+    Automate app management and embedding
+  </Card>
+</CardGroup>
