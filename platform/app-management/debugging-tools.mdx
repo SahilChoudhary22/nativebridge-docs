@@ -1,22 +1,404 @@
 ---
 title: "Debugging Tools"
-description: "NativeBridge provides multiple debugging tools out of the box to debug and test your application"
+description: "Comprehensive suite of professional debugging and diagnostic tools for mobile application development, testing, and troubleshooting"
 ---
 
-## Send files to device
-You can conveniently send any file to the mobile device you're working on by clicking on the 'Send files to device' button on the magic link/app page and session screen.
+## Overview
 
-## Upload Another App
-Sometimes there's a dependency on multiple apps or if you want to see if there's any other app interfering with your app. You can upload multiple apps in a single session and test your app.
+NativeBridge provides an enterprise-grade debugging toolkit that gives developers and QA engineers unprecedented access to mobile devices for comprehensive application analysis. Our debugging suite offers the same level of control as physical device access, enabling efficient troubleshooting, performance optimization, and quality assurance workflows.
 
-## Access Device Shell
-You can directly access the device shell for your debugging just by clicking the 'Access Device Shell' button. The level of access you get in this section is dependent on your user role as well as your plan tier.
+<CardGroup cols={2}>
+  <Card title="Real Device Access" icon="mobile-screen">
+    Direct interaction with actual iOS and Android devices in the cloud
+  </Card>
 
-## Access File Explorer
-You can easily access the file explorer directly from the magic link/app page/session page without interacting with the device directly.
+  <Card title="Advanced Diagnostics" icon="microscope">
+    Professional-grade tools for deep system analysis and debugging
+  </Card>
 
-## System Logs
-You get access to all levels of system logs for every device you spin up. You can also choose between different levels of logs to help with your debugging. These logs can also be downloaded later from the activity section
+  <Card title="File Management" icon="folder-tree">
+    Complete file system access for data inspection and manipulation
+  </Card>
 
-## Connect With ADB
-This is one of the most amazing features of NativeBridge as the level of access you get to the device is equivalent to you having the physical device with you. You can directly connect with the device via ADB and use it as the phone for everything from development to QA to review processes.
+  <Card title="Remote Development" icon="code">
+    Full ADB connectivity for development and debugging workflows
+  </Card>
+</CardGroup>
+
+## Core Debugging Features
+
+### File Transfer System
+
+#### Send Files to Device
+
+Transfer any file type directly to your test device for comprehensive testing scenarios:
+
+<Steps>
+  <Step title="Access File Transfer">
+    Navigate to the **Send files to device** button on the session screen or magic link page
+  </Step>
+
+  <Step title="Select Files">
+    Choose single or multiple files from your local system (supports drag-and-drop)
+  </Step>
+
+  <Step title="Configure Destination">
+    Specify the target directory on the device or use default app storage
+  </Step>
+
+  <Step title="Transfer & Verify">
+    Monitor transfer progress and verify file integrity on the device
+  </Step>
+</Steps>
+
+**Use Cases:**
+- Test document imports and exports
+- Validate file handling capabilities
+- Load test data and configurations
+- Deploy debug certificates and profiles
+
+<Note>
+  **File Size Limits**: Standard plans support files up to 100MB. Enterprise plans have unlimited file transfer capabilities.
+</Note>
+
+### Multi-App Testing Environment
+
+#### Upload Multiple Applications
+
+Test complex app interactions and dependencies within a single session:
+
+<Tabs>
+  <Tab title="Setup Process">
+    1. Launch your primary application session
+    2. Click **Upload Another App** in the control panel
+    3. Select additional APK/IPA files to install
+    4. Apps install sequentially with progress tracking
+    5. Switch between apps seamlessly during testing
+  </Tab>
+
+  <Tab title="Common Scenarios">
+    - **Deep Linking**: Test app-to-app navigation flows
+    - **OAuth Flows**: Validate authentication with provider apps
+    - **Data Sharing**: Verify content sharing between applications
+    - **Compatibility**: Check for conflicts or interference
+    - **Integration Testing**: Validate third-party SDK behaviors
+  </Tab>
+
+  <Tab title="Limitations">
+    | Plan Type | Max Apps | Storage |
+    |-----------|----------|---------|
+    | Starter | 2 apps | 500MB |
+    | Professional | 5 apps | 2GB |
+    | Enterprise | Unlimited | Unlimited |
+  </Tab>
+</Tabs>
+
+### Device Shell Access
+
+#### Command-Line Interface
+
+Direct terminal access to device systems for advanced debugging:
+
+<AccordionGroup>
+  <Accordion title="Shell Capabilities">
+    - **System Commands**: Execute standard Unix/Linux commands
+    - **Process Management**: Monitor and control running processes
+    - **Network Diagnostics**: Run ping, netstat, and trace commands
+    - **Package Management**: Install, update, and remove packages
+    - **Permission Inspection**: Review and modify app permissions
+  </Accordion>
+
+  <Accordion title="Access Levels">
+    Different permission tiers based on your subscription:
+
+    **Basic Access:**
+    - Read-only system information
+    - Application-specific directories
+    - Basic network diagnostics
+
+    **Advanced Access:**
+    - Write permissions to app directories
+    - Process manipulation capabilities
+    - Extended system diagnostics
+
+    **Root Access (Enterprise):**
+    - Full system access
+    - Kernel-level debugging
+    - System file modifications
+  </Accordion>
+
+  <Accordion title="Security Considerations">
+    - All shell sessions are logged and audited
+    - Isolated environments prevent cross-contamination
+    - Automatic session timeouts for security
+    - Encrypted command transmission
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  **Security Notice**: Shell access is monitored and logged. Attempting to access restricted areas or perform unauthorized operations will result in immediate session termination.
+</Warning>
+
+### File System Explorer
+
+#### Visual File Management
+
+Browse and manage device file systems through an intuitive interface:
+
+<CardGroup cols={2}>
+  <Card title="Navigation Features" icon="compass">
+    - Hierarchical directory browsing
+    - Quick search and filtering
+    - Breadcrumb navigation
+    - Bookmark frequently used paths
+  </Card>
+
+  <Card title="File Operations" icon="edit">
+    - Create, rename, and delete files
+    - Edit text files in-browser
+    - View image and media files
+    - Download files to local system
+  </Card>
+
+  <Card title="Advanced Tools" icon="wrench">
+    - Batch operations support
+    - File permission management
+    - Symbolic link creation
+    - Archive extraction and creation
+  </Card>
+
+  <Card title="Integration" icon="plug">
+    - Direct ADB file push/pull
+    - Clipboard synchronization
+    - Drag-and-drop upload
+    - Context menu actions
+  </Card>
+</CardGroup>
+
+### System Logging
+
+#### Comprehensive Log Management
+
+Access and analyze all system and application logs in real-time:
+
+<Tabs>
+  <Tab title="Log Levels">
+    ```
+    VERBOSE  - All messages including debug details
+    DEBUG    - Debugging messages and application flow
+    INFO     - Informational messages and events
+    WARNING  - Potentially harmful situations
+    ERROR    - Error events and exceptions
+    FATAL    - Critical errors causing termination
+    ```
+  </Tab>
+
+  <Tab title="Filtering Options">
+    - **By Application**: Focus on specific app packages
+    - **By Tag**: Filter using log tags and categories
+    - **By Time Range**: View logs within specific periods
+    - **By Keyword**: Search for specific terms or patterns
+    - **By PID/TID**: Track specific process or thread logs
+  </Tab>
+
+  <Tab title="Export Formats">
+    - **Plain Text**: Simple log format for quick review
+    - **JSON**: Structured format for automated analysis
+    - **CSV**: Spreadsheet-compatible for reporting
+    - **HTML**: Formatted view with syntax highlighting
+  </Tab>
+</Tabs>
+
+**Advanced Features:**
+- Real-time streaming with minimal latency
+- Color-coded severity levels
+- Regular expression pattern matching
+- Log persistence across sessions
+- Automatic log rotation and archival
+
+### ADB Connectivity
+
+#### Professional Development Bridge
+
+Connect to cloud devices as if they were physically connected to your workstation:
+
+<Steps>
+  <Step title="Generate Connection">
+    Click **Connect with ADB** to generate unique connection credentials
+  </Step>
+
+  <Step title="Configure Local ADB">
+    ```bash
+    adb connect device-id.nativebridge.io:5555
+    ```
+  </Step>
+
+  <Step title="Authenticate">
+    Enter the provided authentication token when prompted
+  </Step>
+
+  <Step title="Start Development">
+    Use all standard ADB commands as with a local device
+  </Step>
+</Steps>
+
+<Info>
+  **Pro Tip**: Save frequently used devices as environment variables for quick reconnection:
+  ```bash
+  export NATIVE_BRIDGE_DEVICE="device-id.nativebridge.io:5555"
+  adb connect $NATIVE_BRIDGE_DEVICE
+  ```
+</Info>
+
+#### Supported ADB Operations
+
+<CardGroup cols={3}>
+  <Card title="Development" icon="code">
+    - Install/uninstall apps
+    - Deploy debug builds
+    - Run instrumentation tests
+    - Profile performance
+  </Card>
+
+  <Card title="Debugging" icon="bug">
+    - Attach debuggers
+    - Inspect databases
+    - Monitor network traffic
+    - Capture heap dumps
+  </Card>
+
+  <Card title="Automation" icon="robot">
+    - Execute UI tests
+    - Record/replay sessions
+    - Capture screenshots
+    - Generate bug reports
+  </Card>
+</CardGroup>
+
+## Advanced Debugging Workflows
+
+### Performance Profiling
+
+<AccordionGroup>
+  <Accordion title="CPU Profiling">
+    Monitor CPU usage and identify performance bottlenecks:
+    - Method-level profiling
+    - Thread activity analysis
+    - Call stack visualization
+    - Flame graph generation
+  </Accordion>
+
+  <Accordion title="Memory Analysis">
+    Track memory allocation and detect leaks:
+    - Heap dump analysis
+    - Allocation tracking
+    - Reference chain inspection
+    - Memory pressure simulation
+  </Accordion>
+
+  <Accordion title="Network Monitoring">
+    Analyze network traffic and API calls:
+    - Request/response inspection
+    - Bandwidth usage tracking
+    - Latency measurements
+    - SSL/TLS debugging
+  </Accordion>
+
+  <Accordion title="Graphics Debugging">
+    Optimize rendering and UI performance:
+    - Frame rate monitoring
+    - GPU usage analysis
+    - Overdraw detection
+    - Layout hierarchy inspection
+  </Accordion>
+</AccordionGroup>
+
+## Integration Capabilities
+
+### CI/CD Pipeline Integration
+
+Incorporate debugging tools into automated workflows:
+
+```yaml
+# Example GitHub Actions Integration
+- name: Debug Failed Tests
+  if: failure()
+  run: |
+    native-bridge debug \
+      --session-id ${{ env.SESSION_ID }} \
+      --capture-logs \
+      --screenshot \
+      --heap-dump
+```
+
+### IDE Plugins
+
+<CardGroup cols={2}>
+  <Card title="VS Code Extension" icon="visual-studio" href="/tools/vscode">
+    Direct debugging from Visual Studio Code
+  </Card>
+
+  <Card title="Android Studio Plugin" icon="android" href="/tools/android-studio">
+    Seamless integration with Android Studio
+  </Card>
+
+  <Card title="Xcode Integration" icon="apple" href="/tools/xcode">
+    iOS debugging through Xcode workflows
+  </Card>
+
+  <Card title="IntelliJ Plugin" icon="intellij" href="/tools/intellij">
+    Full debugging support in IntelliJ IDEA
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+### Debugging Strategy
+
+<Note>
+  **Recommended Workflow**: Start with high-level logs, then progressively dive deeper using specialized tools as you narrow down the issue.
+</Note>
+
+1. **Initial Triage**: Review system logs for obvious errors
+2. **Reproduce Issue**: Use session recording to capture the problem
+3. **Deep Analysis**: Employ specific tools based on issue type
+4. **Root Cause**: Use shell and file system access for investigation
+5. **Verification**: Confirm fix using automated tests
+
+### Security Guidelines
+
+- Always use secure connections for ADB access
+- Rotate authentication tokens regularly
+- Limit debug access to development environments
+- Sanitize logs before sharing externally
+- Follow data protection regulations for user data
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| ADB connection timeout | Check firewall settings and authentication token |
+| File upload failures | Verify file size limits and storage quota |
+| Shell access denied | Confirm subscription tier and permissions |
+| Log streaming interruption | Check network stability and reconnect |
+| File system not loading | Clear browser cache and reload session |
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="API Documentation" icon="book" href="/api/debugging">
+    Programmatic access to debugging tools
+  </Card>
+
+  <Card title="Video Tutorials" icon="video" href="/tutorials/debugging">
+    Step-by-step debugging walkthroughs
+  </Card>
+
+  <Card title="Knowledge Base" icon="lightbulb" href="/kb/debugging">
+    Common debugging scenarios and solutions
+  </Card>
+
+  <Card title="Support" icon="headset" href="/support">
+    Get expert help with debugging issues
+  </Card>
+</CardGroup>

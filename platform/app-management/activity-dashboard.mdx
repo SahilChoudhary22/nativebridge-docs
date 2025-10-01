@@ -1,29 +1,180 @@
 ---
 title: "Activity Dashboard"
-description: "Activity Dashboard is where all your past device sessions and test runs are tracked."
+description: "Centralized hub for monitoring, analyzing, and managing all device sessions and test automation runs with comprehensive logging and reporting capabilities."
 ---
 
-## Going to the Activity Dashboard
-To go to the activity dashboard
+## Overview
+
+The Activity Dashboard provides a comprehensive view of all your testing activities, enabling you to track performance, identify issues, and optimize your testing workflow. Access detailed logs, session recordings, and analytics for both manual device sessions and automated test runs.
+
+## Accessing the Activity Dashboard
+
 <Steps>
-  <Step title="Click on the profile icon on top right">
+  <Step title="Navigate to Your Profile">
+    Click on the profile icon located in the top-right corner of the interface
   </Step>
 
-  <Step title="Navigate to 'Activity' Section">
-    Go to your [Activity](https://nativebridge.io/activity)
+  <Step title="Select Activity Section">
+    Choose **Activity** from the dropdown menu or navigate directly to [nativebridge.io/activity](https://nativebridge.io/activity)
   </Step>
 </Steps>
 
-Here you can access all your past 
-1. device sessions
-- Access logs of your sessions
-- Access recordings from the sessions
-- Along with the details like device used, duration of usage etc.
+## Device Sessions
 
-2. Test & App Automation Logs
-- Get detailed report of your test runs
-- Get logs of your test run
-- Get recordings of your test runs
-- Along with the details like device used, duration of usage, testing library used, etc.
+### Session Management
+Monitor and analyze all your device testing sessions with comprehensive tracking capabilities:
 
+<CardGroup cols={2}>
+  <Card title="Session Logs" icon="file-lines">
+    Access detailed logs from each testing session including system events, user interactions, and application responses
+  </Card>
 
+  <Card title="Session Recordings" icon="video">
+    Review complete video recordings of your sessions for debugging and quality assurance purposes
+  </Card>
+
+  <Card title="Device Information" icon="mobile">
+    Track device specifications, OS versions, and hardware configurations used during testing
+  </Card>
+
+  <Card title="Usage Analytics" icon="chart-line">
+    Monitor session duration, interaction patterns, and resource utilization metrics
+  </Card>
+</CardGroup>
+
+### Key Features
+- **Real-time Monitoring**: Track active sessions as they occur
+- **Historical Data**: Access archived sessions for compliance and analysis
+- **Search & Filter**: Quickly locate specific sessions using advanced filters
+- **Export Capabilities**: Download logs and reports for offline analysis
+
+## Test Automation Analytics
+
+### Comprehensive Test Reporting
+Gain deep insights into your automated testing processes with advanced analytics:
+
+<CardGroup cols={2}>
+  <Card title="Test Reports" icon="clipboard-check">
+    Detailed pass/fail analysis with execution timelines and error diagnostics
+  </Card>
+
+  <Card title="Execution Logs" icon="terminal">
+    Complete command-line outputs, API responses, and system messages
+  </Card>
+
+  <Card title="Video Evidence" icon="play-circle">
+    Visual recordings of automated test executions for verification
+  </Card>
+
+  <Card title="Framework Details" icon="code">
+    Information about testing frameworks, libraries, and configurations used
+  </Card>
+</CardGroup>
+
+### Analytics Dashboard Features
+- **Test Suite Overview**: Aggregate statistics across all test runs
+- **Failure Analysis**: Identify patterns and common failure points
+- **Performance Metrics**: Track execution times and resource consumption
+- **Integration Data**: Monitor CI/CD pipeline integration status
+
+## Data Management
+
+<Tabs>
+  <Tab title="Retention Policies">
+    - Session logs retained for 30 days
+    - Video recordings available for 14 days
+    - Test reports archived for 90 days
+    - Custom retention available for enterprise plans
+  </Tab>
+
+  <Tab title="Export Options">
+    - **CSV Export**: Structured data for spreadsheet analysis
+    - **JSON Format**: Machine-readable format for integration
+    - **PDF Reports**: Professional documentation for stakeholders
+    - **Video Downloads**: MP4 format for offline review
+  </Tab>
+
+  <Tab title="Access Control">
+    - Role-based permissions for sensitive data
+    - Team member access management
+    - Audit trail for all data access
+    - Compliance with data protection regulations
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+### Optimizing Dashboard Usage
+
+<AccordionGroup>
+  <Accordion title="Regular Review Cycles">
+    Establish routine review periods to analyze testing patterns and identify optimization opportunities. Weekly reviews help maintain testing quality and efficiency.
+  </Accordion>
+
+  <Accordion title="Automated Alerting">
+    Configure alerts for failed tests, unusual session durations, or resource threshold breaches to enable proactive issue resolution.
+  </Accordion>
+
+  <Accordion title="Data-Driven Decisions">
+    Leverage dashboard metrics to inform test strategy, device selection, and resource allocation decisions based on historical performance data.
+  </Accordion>
+
+  <Accordion title="Team Collaboration">
+    Share dashboard access with relevant team members to foster collaborative debugging and knowledge sharing across your organization.
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Features
+
+<Note>
+  **Pro Tip**: Use the Activity Dashboard's API endpoints to integrate session data with your existing monitoring and analytics tools for enhanced visibility.
+</Note>
+
+### Custom Dashboards
+Create personalized views focusing on metrics most relevant to your team:
+- Filter by project or application
+- Set custom date ranges
+- Save frequently used queries
+- Schedule automated reports
+
+### Performance Benchmarking
+Compare current test results against historical baselines:
+- Track performance trends over time
+- Identify regression patterns
+- Monitor improvement initiatives
+- Generate executive summaries
+
+## Troubleshooting
+
+<Warning>
+  If you experience issues accessing session data or recordings, verify your account permissions and check the retention period for the requested data.
+</Warning>
+
+### Common Issues and Solutions
+
+| Issue | Solution |
+|-------|----------|
+| Missing session recordings | Check if recordings are enabled in project settings |
+| Incomplete test logs | Ensure proper test framework integration |
+| Slow dashboard loading | Try filtering to a smaller date range |
+| Export failures | Verify available storage quota |
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="API Documentation" icon="book" href="/api/activity">
+    Programmatic access to activity data
+  </Card>
+
+  <Card title="Webhooks" icon="webhook" href="/integrations/webhooks">
+    Real-time notifications for test events
+  </Card>
+
+  <Card title="Analytics Guide" icon="chart-bar" href="/guides/analytics">
+    Deep dive into metrics and KPIs
+  </Card>
+
+  <Card title="Support" icon="headset" href="/support">
+    Get help with dashboard features
+  </Card>
+</CardGroup>

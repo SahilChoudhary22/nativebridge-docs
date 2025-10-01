@@ -1,34 +1,359 @@
 ---
-title: "Test/App Automation"
-description: "Seamlessly automate and test your app with Appium & Maestro Scripts"
+title: "Test & App Automation"
+description: "Enterprise-grade mobile application testing and automation platform supporting Appium, Maestro, and custom frameworks for comprehensive quality assurance"
 ---
 
-# Test Automation
+## Overview
 
-## Accessing the App Automation Section
-To go to the app automation section
+NativeBridge Test Automation provides a powerful, cloud-based platform for automating mobile application testing across iOS and Android devices. With support for industry-standard frameworks like Appium and Maestro, teams can execute comprehensive test suites, continuous integration workflows, and performance validations at scale.
+
+<CardGroup cols={2}>
+  <Card title="Appium Support" icon="robot">
+    Full compatibility with Appium WebDriver protocol for cross-platform testing
+  </Card>
+
+  <Card title="Maestro Framework" icon="wand-magic-sparkles">
+    Native support for Maestro's declarative testing approach
+  </Card>
+
+  <Card title="Cloud Devices" icon="cloud">
+    Access to real devices in the cloud for authentic testing scenarios
+  </Card>
+
+  <Card title="CI/CD Integration" icon="infinity">
+    Seamless integration with popular CI/CD pipelines
+  </Card>
+</CardGroup>
+
+## Getting Started
+
+### Accessing the Automation Platform
+
 <Steps>
-  <Step title="Click on the profile icon on top right">
+  <Step title="Navigate to Your Profile">
+    Click on the profile icon in the top-right corner of the interface
   </Step>
 
-  <Step title="Navigate to 'App Automation' Section">
-    Go to your [App Automation](https://nativebridge.io/app-automation)
+  <Step title="Select App Automation">
+    Choose **App Automation** from the menu or navigate directly to [App Automation Section](https://nativebridge.io/dashboard/app-automation)
+  </Step>
+
+  <Step title="Choose Your Workspace">
+    Select an existing workspace or create a new one for your automation projects
   </Step>
 </Steps>
 
-## Creating a new project
-You can create a new project from scratch or import a folder or import from your github repository.
+## Project Management
 
-## Managing your project
-Upon clicking on your project, you'll be navigated to an VSCode-like (IDE-like) interface. This is so that you have complete freedom to create, edit, and manage your spec files.
+### Creating Projects
 
-## Running the test/automation
-There are multiple ways to run the spec files. First being the simplest, through the UI.
+NativeBridge offers multiple methods to initialize your automation projects:
 
-To run a single spec file, just select the spec file in your project and click on the green run button at the top of your screen.
+<Tabs>
+  <Tab title="New Project">
+    Start fresh with a structured project template:
+    - Pre-configured directory structure
+    - Sample test files for quick start
+    - Framework-specific boilerplate code
+    - Environment configuration templates
+  </Tab>
 
-<Note>To run multiple spec files, just select multiple files and click on the green run button. Otherwise you can just add more files in the modal that opens up when you click on run button. </Note>
+  <Tab title="Import Folder">
+    Upload existing test suites from your local environment:
+    - Drag-and-drop folder upload
+    - Automatic dependency detection
+    - Configuration file recognition
+    - Bulk file import with structure preservation
+  </Tab>
 
-The other way to run the automation is through the API or the magic link/session page.
+  <Tab title="GitHub Integration">
+    Connect directly to your repository:
+    - OAuth-based authentication
+    - Branch selection and management
+    - Automatic sync with commits
+    - Pull request integration
+  </Tab>
+</Tabs>
 
+### IDE Environment
 
+The integrated development environment provides a comprehensive workspace for test development:
+
+<AccordionGroup>
+  <Accordion title="Code Editor Features">
+    - **Syntax Highlighting**: Language-specific highlighting for test scripts
+    - **IntelliSense**: Auto-completion for framework methods and properties
+    - **Error Detection**: Real-time syntax and logic error identification
+    - **Code Formatting**: Automatic code formatting and linting
+  </Accordion>
+
+  <Accordion title="File Management">
+    - **Project Explorer**: Hierarchical view of all project files
+    - **Search & Replace**: Global search across all project files
+    - **Version Control**: Built-in Git integration for tracking changes
+    - **File Templates**: Quick creation of test files from templates
+  </Accordion>
+
+  <Accordion title="Testing Tools">
+    - **Test Runner**: Execute tests directly from the editor
+    - **Debugging**: Breakpoint support and step-through debugging
+    - **Console Output**: Real-time test execution logs
+    - **Result Viewer**: Interactive test result analysis
+  </Accordion>
+</AccordionGroup>
+
+## Test Execution
+
+### Execution Methods
+
+<CardGroup cols={3}>
+  <Card title="UI Execution" icon="play">
+    Run tests directly from the web interface with visual feedback
+  </Card>
+
+  <Card title="API Triggers" icon="code">
+    Programmatic execution via REST API for automation pipelines
+  </Card>
+
+  <Card title="Magic Links" icon="link">
+    Shareable URLs for triggering specific test suites
+  </Card>
+</CardGroup>
+
+### Running Tests via UI
+
+#### Single Test Execution
+1. Navigate to your project in the IDE
+2. Select the desired spec file from the project explorer
+3. Click the **Run** button (green play icon) in the toolbar
+4. Configure device and environment settings in the modal
+5. Monitor real-time execution progress
+
+#### Batch Test Execution
+
+<Note>
+  **Multi-file Selection**: Hold `Ctrl/Cmd` while clicking to select multiple test files, or use `Shift+Click` for range selection. All selected tests will run sequentially or in parallel based on your configuration.
+</Note>
+
+### API-Based Execution
+
+Integrate test execution into your CI/CD pipeline:
+
+```bash
+curl -X POST https://api.nativebridge.io/v1/tests/run \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "your-project-id",
+    "testFiles": ["test1.spec.js", "test2.spec.js"],
+    "device": "iPhone-14-Pro",
+    "framework": "appium"
+  }'
+```
+
+### Magic Links
+
+Generate shareable execution links for non-technical stakeholders:
+
+1. Configure your test suite in the UI
+2. Click **Generate Magic Link**
+3. Share the URL with team members
+4. Recipients can trigger tests without platform access
+
+## Supported Frameworks
+
+### Appium Configuration
+
+<Tabs>
+  <Tab title="Capabilities">
+    ```json
+    {
+      "platformName": "iOS",
+      "platformVersion": "16.0",
+      "deviceName": "iPhone 14 Pro",
+      "app": "path/to/app.ipa",
+      "automationName": "XCUITest",
+      "noReset": true
+    }
+    ```
+  </Tab>
+
+  <Tab title="Sample Test">
+    ```javascript
+    describe('Login Test', () => {
+      it('should login successfully', async () => {
+        await driver.findElement(By.id('username')).sendKeys('user@example.com');
+        await driver.findElement(By.id('password')).sendKeys('password123');
+        await driver.findElement(By.id('loginButton')).click();
+
+        const welcomeText = await driver.findElement(By.id('welcomeMessage')).getText();
+        expect(welcomeText).toBe('Welcome back!');
+      });
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Maestro Configuration
+
+<Tabs>
+  <Tab title="Flow Definition">
+    ```yaml
+    appId: com.example.app
+    ---
+    - launchApp
+    - tapOn: "Get Started"
+    - inputText: "user@example.com"
+    - tapOn: "Continue"
+    - assertVisible: "Welcome Dashboard"
+    ```
+  </Tab>
+
+  <Tab title="Advanced Flow">
+    ```yaml
+    appId: com.example.app
+    env:
+      USERNAME: test@example.com
+      PASSWORD: ${PASSWORD}
+    ---
+    - launchApp:
+        clearState: true
+    - tapOn:
+        id: "login_button"
+    - inputText: ${USERNAME}
+    - tapOn: "Next"
+    - inputText: ${PASSWORD}
+    - tapOn: "Sign In"
+    - waitForAnimationToEnd
+    - takeScreenshot: "login_success"
+    ```
+  </Tab>
+</Tabs>
+
+## Advanced Features
+
+### Parallel Execution
+
+Run multiple tests simultaneously across different devices:
+
+<Info>
+  **Performance Boost**: Parallel execution can reduce total test time by up to 80% compared to sequential runs. Configure parallelization in your project settings.
+</Info>
+
+### Test Data Management
+
+<CardGroup cols={2}>
+  <Card title="Environment Variables" icon="key">
+    Secure storage and injection of sensitive test data
+  </Card>
+
+  <Card title="Data Files" icon="database">
+    CSV, JSON, and Excel support for data-driven testing
+  </Card>
+
+  <Card title="Dynamic Generation" icon="shuffle">
+    Built-in functions for generating test data on-the-fly
+  </Card>
+
+  <Card title="External APIs" icon="plug">
+    Integration with external data sources and services
+  </Card>
+</CardGroup>
+
+### Reporting & Analytics
+
+#### Test Reports
+- **Detailed Results**: Pass/fail status, execution time, error messages
+- **Screenshots**: Automatic capture at failure points
+- **Video Recording**: Full session recordings for debugging
+- **Performance Metrics**: CPU, memory, and network usage
+
+#### Analytics Dashboard
+- **Trend Analysis**: Historical pass rates and execution times
+- **Flaky Test Detection**: Identify unstable tests automatically
+- **Coverage Metrics**: Track test coverage across features
+- **Custom Dashboards**: Build personalized views with key metrics
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Test Organization">
+    - Group related tests into suites
+    - Use descriptive naming conventions
+    - Implement page object patterns
+    - Maintain separate configuration files
+  </Accordion>
+
+  <Accordion title="Performance Optimization">
+    - Minimize unnecessary waits
+    - Use efficient element locators
+    - Implement smart retry logic
+    - Cache reusable test data
+  </Accordion>
+
+  <Accordion title="Maintenance Strategy">
+    - Regular review of test failures
+    - Update locators proactively
+    - Remove obsolete tests
+    - Document test purposes clearly
+  </Accordion>
+
+  <Accordion title="CI/CD Integration">
+    - Automate test triggers on commits
+    - Set up quality gates
+    - Configure notifications
+    - Archive test artifacts
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+### Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Tests timing out | Increase wait times or check network connectivity |
+| Element not found | Verify selector accuracy and page load status |
+| Session creation failed | Check device availability and app compatibility |
+| Parallel execution errors | Reduce concurrency or increase resource allocation |
+
+<Warning>
+  **Resource Limits**: Be aware of your plan's concurrent execution limits. Exceeding these may result in queued tests or execution failures.
+</Warning>
+
+## API Reference
+
+### Authentication
+All API requests require authentication via Bearer token:
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+### Endpoints
+
+- `POST /v1/tests/run` - Execute test suite
+- `GET /v1/tests/{id}/status` - Check execution status
+- `GET /v1/tests/{id}/results` - Retrieve test results
+- `POST /v1/projects/create` - Create new project
+- `PUT /v1/projects/{id}/update` - Update project configuration
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Framework Guides" icon="book" href="/guides/frameworks">
+    Detailed setup guides for each supported framework
+  </Card>
+
+  <Card title="Device Catalog" icon="mobile" href="/devices">
+    Browse available devices and capabilities
+  </Card>
+
+  <Card title="CI/CD Templates" icon="gear" href="/templates/cicd">
+    Ready-to-use pipeline configurations
+  </Card>
+
+  <Card title="Support Center" icon="life-ring" href="/support">
+    Get help from our technical team
+  </Card>
+</CardGroup>

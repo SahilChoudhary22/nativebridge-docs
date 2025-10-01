@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "NativeBridge",
+  "theme": "willow",
+  "name": "NativeBridge Learning Center",
   "colors": {
     "primary": "#3B82F6",
     "light": "#60A5FA",
@@ -58,37 +58,37 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/nativebridge",
+          "href": "https://github.com/AutoFlowLabs",
           "icon": "github"
         },
         {
           "anchor": "Discord",
-          "href": "https://discord.gg/nativebridge",
+          "href": "https://discord.com/invite/FHXJRkYqEQ",
           "icon": "discord"
         },
         {
           "anchor": "Support",
-          "href": "mailto:support@nativebridge.dev",
+          "href": "mailto:contact@autoflowapp.com",
           "icon": "envelope"
         }
       ]
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
   },
   "navbar": {
     "links": [
       {
         "label": "GitHub",
-        "href": "https://github.com/nativebridge"
+        "href": "https://github.com/AutoFlowLabs"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Get Started",
-      "href": "https://github.com/nativebridge/nativebridge"
+      "href": "https://nativebridge.io?ref=docs"
     }
   },
   "contextual": {
@@ -107,7 +107,7 @@
     "socials": {
       "x": "https://x.com/nativebridge",
       "github": "https://github.com/nativebridge",
-      "discord": "https://discord.gg/nativebridge"
+      "discord": "https://discord.com/invite/FHXJRkYqEQ"
     }
   }
 }
