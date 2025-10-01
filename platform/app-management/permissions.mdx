@@ -47,9 +47,6 @@ Set default permissions that apply to all apps in your organization:
   </Step>
 </Steps>
 
-<Frame>
-  <img src="/images/organization-permissions.png" alt="Organization Default Permissions" />
-</Frame>
 
 ### App-Level Permissions
 
@@ -73,12 +70,9 @@ App-level permissions will override organization defaults. We recommend using or
   </Step>
 </Steps>
 
-<Frame>
-  <img src="/images/app-build-permissions.png" alt="App Build Level Permissions" />
-</Frame>
 
 <Info>
-App permissions can also be configured when uploading via our REST API. See [Create new app](/rest-api/create-new-app) and [Update existing app](/rest-api/update-existing-app) for API usage.
+App permissions can also be configured when uploading via our API. See the [API Reference](/api-reference) for details.
 </Info>
 
 ## Available Permissions
@@ -197,15 +191,9 @@ const response = await fetch('https://api.nativebridge.dev/v1/apps', {
     Start uploading and setting permissions
   </Card>
 
-  <Card title="Share Your App" icon="share" href="/platform/sharing-apps">
-    Learn about sharing options
-  </Card>
 
-  <Card title="Organization Settings" icon="building" href="/platform/organization">
-    Configure organization-wide settings
-  </Card>
 
-  <Card title="REST API" icon="code" href="/rest-api">
+  <Card title="API Reference" icon="code" href="/api-reference">
     Automate permission management
   </Card>
 </CardGroup>
